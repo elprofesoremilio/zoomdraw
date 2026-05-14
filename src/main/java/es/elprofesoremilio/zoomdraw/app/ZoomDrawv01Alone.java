@@ -1,10 +1,9 @@
-package es.elprofesoremilio.zoomdraw;
+package es.elprofesoremilio.zoomdraw.app;
 
 import com.github.kwhat.jnativehook.GlobalScreen;
 import com.github.kwhat.jnativehook.NativeHookException;
 import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent;
 import com.github.kwhat.jnativehook.keyboard.NativeKeyListener;
-
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.geometry.Rectangle2D;
@@ -21,8 +20,7 @@ import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 
-import java.awt.MouseInfo;
-import java.awt.Point;
+import java.awt.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -47,7 +45,7 @@ import java.util.logging.Logger;
  * directamente via JNI/JNA.
  * ───────────────────────────────────────────────────────────────────────────
  */
-public class ZoomDrawApp extends Application {
+public class ZoomDrawv01Alone extends Application {
 
     // -----------------------------------------------------------------------
     // Estado de la aplicación
@@ -126,7 +124,7 @@ public class ZoomDrawApp extends Application {
                 // ── CTRL+1: activar o desactivar modo anotación ──────────────
                 // Funciona tanto con como sin foco (hook global).
                 if (ctrlDown && keyCode == NativeKeyEvent.VC_1) {
-                    Platform.runLater(ZoomDrawApp.this::toggleModoAnotacion);
+                    Platform.runLater(ZoomDrawv01Alone.this::toggleModoAnotacion);
                     return;
                 }
 
