@@ -18,15 +18,10 @@ module es.elprofesoremilio.zoomdraw { // Mejor usar el nombre del paquete base
     requires javafx.controls;
     requires javafx.fxml;
     requires javafx.swing;
-
     // Módulo de AWT/Swing (necesario para Robot, SystemTray e interactuar con javafx.swing)
     requires java.desktop;
-
     // Librerías de terceros (Automatic modules)
     requires com.github.kwhat.jnativehook;
-
-    // Abrir a JavaFX para que pueda hacer reflexión (útil si usas FXML más adelante)
-    opens es.elprofesoremilio.zoomdraw.ui to javafx.fxml;
 
     // Exportar paquetes principales
     exports es.elprofesoremilio.zoomdraw;

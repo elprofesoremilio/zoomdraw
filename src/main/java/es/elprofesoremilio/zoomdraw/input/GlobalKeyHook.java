@@ -34,6 +34,9 @@ public class GlobalKeyHook implements NativeKeyListener {
 
     @Override
     public void nativeKeyPressed(NativeKeyEvent e) {
+        // LOG TEMPORAL: Si ves esto en consola al pulsar teclas, el Hook funciona.
+//        System.out.println("Key Pressed: " + NativeKeyEvent.getKeyText(e.getKeyCode()));
+
         boolean ctrlDown = (e.getModifiers() & NativeKeyEvent.CTRL_MASK) != 0;
         int keyCode = e.getKeyCode();
 

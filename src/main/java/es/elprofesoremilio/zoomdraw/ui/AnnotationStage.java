@@ -5,9 +5,12 @@ import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.image.WritableImage;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.StrokeLineCap;
+import javafx.scene.shape.StrokeLineJoin;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.TextAlignment;
@@ -18,18 +21,52 @@ public class AnnotationStage extends Stage {
 
     private final AnnotationManager manager;
     private final Canvas canvas;
+    private final GraphicsContext gc;
 
-    public AnnotationStage(AnnotationManager manager, Rectangle2D bounds) {
+    public AnnotationStage(AnnotationManager manager, Rectangle2D bounds, WritableImage background) {
         super(StageStyle.TRANSPARENT);
         this.manager = manager;
 
         this.canvas = new Canvas(bounds.getWidth(), bounds.getHeight());
-        drawPlaceholderContent(bounds.getWidth(), bounds.getHeight());
+        this.gc = canvas.getGraphicsContext2D();
+
+        // Configurar estilo de dibujo por defecto (v0.2: Rojo, 3px)
+        gc.setStroke(Color.RED);
+        gc.setLineWidth(3.0);
+        gc.setLineCap(StrokeLineCap.ROUND);
+        gc.setLineJoin(StrokeLineJoin.ROUND);
+
+        // 1. Dibujar el fondo capturado
+        if (background != null) {
+            gc.drawImage(background, 0, 0);
+        } else {
+            // Fallback: Si no hay captura, fondo gris oscuro para saber que la ventana existe
+            gc.setFill(Color.web("#222222"));
+            gc.fillRect(0, 0, bounds.getWidth(), bounds.getHeight());
+        }
+
+        // 2. Configurar el pincel por defecto (v0.2)
+        gc.setStroke(Color.RED);
+        gc.setLineWidth(3);
+        gc.setLineCap(javafx.scene.shape.StrokeLineCap.ROUND);
+        gc.setLineJoin(javafx.scene.shape.StrokeLineJoin.ROUND);
 
         StackPane root = new StackPane(canvas);
-        root.setStyle("-fx-background-color: black;");
+        // Asegúrate de que el root no sea negro opaco si quieres ver la captura
+        root.setBackground(null);
+        Scene scene = new Scene(root, bounds.getWidth(), bounds.getHeight(), Color.TRANSPARENT);
 
-        Scene scene = new Scene(root, bounds.getWidth(), bounds.getHeight(), Color.BLACK);
+        // 3. Lógica de Trazado Libre
+        canvas.setOnMousePressed(e -> {
+            gc.beginPath();
+            gc.moveTo(e.getX(), e.getY());
+            gc.stroke();
+        });
+
+        canvas.setOnMouseDragged(e -> {
+            gc.lineTo(e.getX(), e.getY());
+            gc.stroke();
+        });
 
         // Atajo ESC local (cuando tiene foco)
         scene.setOnKeyPressed(event -> {
@@ -49,6 +86,8 @@ public class AnnotationStage extends Stage {
 
         this.setScene(scene);
         this.setAlwaysOnTop(true);
+
+        // Posicionamiento absoluto
         this.setX(bounds.getMinX());
         this.setY(bounds.getMinY());
         this.setWidth(bounds.getWidth());
