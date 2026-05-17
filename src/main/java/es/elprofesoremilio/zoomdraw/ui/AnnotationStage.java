@@ -40,9 +40,12 @@ public class AnnotationStage extends Stage {
         if (background != null) {
             gc.drawImage(background, 0, 0);
         } else {
-            // Fallback: Si no hay captura, fondo gris oscuro para saber que la ventana existe
-            gc.setFill(Color.web("#222222"));
+            // Fallback (Plan B): Un cristal hiper-transparente en vez de gris oscuro.
+            // Opacidad 0.01 es invisible al ojo humano, pero X11 lo detecta como "sólido"
+            // para que los clics no se cuelen a las ventanas de atrás.
+            gc.setFill(new Color(1.0, 1.0, 1.0, 0.01));
             gc.fillRect(0, 0, bounds.getWidth(), bounds.getHeight());
+            System.out.println("Fondo capturado nulo, usando cristal transparente.");
         }
 
         // 2. Configurar el pincel por defecto (v0.2)

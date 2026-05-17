@@ -31,27 +31,29 @@ public class AnnotationManager {
         System.out.println("Starting annotation mode");
 
         try {
-            int contador=0;
-            System.out.println(contador++);
-
+            // Obtenemos las coordenadas (esto sí puede ir fuera del hilo)
             Rectangle2D targetBounds = ScreenUtils.getScreenBoundsAtCursor();
-            System.out.println(contador++);
-
-            // La captura de pantalla debe ser ANTES de mostrar la ventana
-            final WritableImage background = ScreenUtils.captureScreen(targetBounds);
-            System.out.println(contador++);
 
             Platform.runLater(() -> {
-            currentStage = new AnnotationStage(this, targetBounds, background);
-            System.out.println("runlater");
+                // 1. Capturamos la pantalla DENTRO del hilo de JavaFX (es casi instantáneo)
+                final WritableImage background = ScreenUtils.captureScreen(targetBounds);
 
-            // IMPORTANTE: Primero configuramos y luego mostramos
-            // Forzar visibilidad
-            currentStage.setOpacity(1.0);
-            currentStage.show();
-            currentStage.toFront();
-            triggerFocusHammer();
-            active = true;
+                // 2. Creamos la ventana
+                currentStage = new AnnotationStage(this, targetBounds, background);
+
+                // 3. Forzamos visibilidad y coordenadas (El hack de X11)
+                currentStage.setOpacity(1.0);
+                currentStage.setX(targetBounds.getMinX());
+                currentStage.setY(targetBounds.getMinY());
+
+                currentStage.show();
+
+                currentStage.setX(targetBounds.getMinX());
+                currentStage.setY(targetBounds.getMinY());
+
+                currentStage.toFront();
+                triggerFocusHammer();
+                active = true;
             });
 
         } catch (Exception e) {
