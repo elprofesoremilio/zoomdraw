@@ -17,6 +17,6 @@ public class Main {
         // al evitar que intente usar aceleración por hardware que Wayland bloquea
         System.setProperty("sun.java2d.opengl", "false");
         java.awt.Toolkit.getDefaultToolkit();
-        Application.launch(es.elprofesoremilio.zoomdraw.app.AppLauncher.class, args);
+        Application.launch(AppLauncher.class, args);
     }
 }

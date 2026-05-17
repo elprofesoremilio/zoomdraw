@@ -1,4 +1,4 @@
-package es.elprofesoremilio.zoomdraw;
+package es.elprofesoremilio.zoomdraw.wayland;
 import javafx.application.Application;
 
 /**
@@ -6,7 +6,7 @@ import javafx.application.Application;
  */
 public class MainWayland {
     public static void main(String[] args) {
-        Application.launch(es.elprofesoremilio.zoomdraw.app.UbuntuWaylandIntegrator.class, args);
+        Application.launch(UbuntuWaylandIntegrator.class, args);
     }
 
     /*

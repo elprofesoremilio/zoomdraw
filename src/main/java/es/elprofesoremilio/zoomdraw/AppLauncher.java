@@ -1,4 +1,4 @@
-package es.elprofesoremilio.zoomdraw.app;
+package es.elprofesoremilio.zoomdraw;
 
 import com.github.kwhat.jnativehook.GlobalScreen;
 import es.elprofesoremilio.zoomdraw.core.AnnotationManager;

@@ -1,4 +1,4 @@
-package es.elprofesoremilio.zoomdraw.app;
+package es.elprofesoremilio.zoomdraw.wayland;
 
 import javafx.application.Application;
 import javafx.application.Platform;

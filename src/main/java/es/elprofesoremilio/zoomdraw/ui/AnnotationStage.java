@@ -48,14 +48,13 @@ public class AnnotationStage extends Stage {
             System.out.println("Fondo capturado nulo, usando cristal transparente.");
         }
 
-        // 2. Configurar el pincel por defecto (v0.2)
-        gc.setStroke(Color.RED);
-        gc.setLineWidth(3);
-        gc.setLineCap(javafx.scene.shape.StrokeLineCap.ROUND);
-        gc.setLineJoin(javafx.scene.shape.StrokeLineJoin.ROUND);
+        // 2. Configurar el pincel RECUPERANDO EL ESTADO GUARDADO del Manager
+        gc.setStroke(manager.getCurrentColor());
+        gc.setLineWidth(manager.getCurrentLineWidth());
+        gc.setLineCap(StrokeLineCap.ROUND);
+        gc.setLineJoin(StrokeLineJoin.ROUND);
 
         StackPane root = new StackPane(canvas);
-        // Asegúrate de que el root no sea negro opaco si quieres ver la captura
         root.setBackground(null);
         Scene scene = new Scene(root, bounds.getWidth(), bounds.getHeight(), Color.TRANSPARENT);
 
@@ -71,10 +70,91 @@ public class AnnotationStage extends Stage {
             gc.stroke();
         });
 
-        // Atajo ESC local (cuando tiene foco)
+        // --- CONTROL DE GROSOR CON CTRL + RUEDA DE RATÓN ---
+        scene.setOnScroll(event -> {
+            if (event.isControlDown()) {
+                double newWidth = manager.getCurrentLineWidth();
+                if (event.getDeltaY() > 0) {
+                    // Rueda hacia arriba: aumenta grosor (igual que la tecla +)
+                    newWidth = Math.min(50.0, newWidth + 2.0);
+                } else if (event.getDeltaY() < 0) {
+                    // Rueda hacia abajo: disminuye grosor (igual que la tecla -)
+                    newWidth = Math.max(1.0, newWidth - 2.0);
+                }
+                manager.setCurrentLineWidth(newWidth);
+                gc.setLineWidth(newWidth);
+                event.consume();
+            }
+        });
+
+        // 4. EL CEREBRO DE LAS TECLAS (Colores, Grosor, Opacidad y Salida)
         scene.setOnKeyPressed(event -> {
-            if (event.getCode() == KeyCode.ESCAPE) {
+            KeyCode code = event.getCode();
+            boolean isShift = event.isShiftDown();
+
+            // SALIDA
+            if (code == KeyCode.ESCAPE) {
                 manager.stopAnnotationMode();
+                event.consume();
+                return;
+            }
+
+            // --- LÓGICA DE COLORES ---
+            Color newBaseColor = null;
+            switch (code) {
+                case R: newBaseColor = Color.RED; break;
+                case G: newBaseColor = Color.GREEN; break;
+                case B: newBaseColor = Color.BLUE; break;
+                case Y: newBaseColor = Color.YELLOW; break;
+                case O: newBaseColor = Color.ORANGE; break;
+                case P: newBaseColor = Color.MAGENTA; break; // Rosa/Morado
+                case K: newBaseColor = Color.BLACK; break;
+                case W: newBaseColor = Color.WHITE; break;
+                default: break;
+            }
+
+            if (newBaseColor != null) {
+                // Si Shift está pulsado, aplicamos la opacidad por defecto del manager. Si no, 1.0 (opaco)
+                double alpha = isShift ? manager.getDefaultSemiTransparentOpacity() : 1.0;
+                Color finalColor = new Color(newBaseColor.getRed(), newBaseColor.getGreen(), newBaseColor.getBlue(), alpha);
+
+                manager.setCurrentColor(finalColor);
+                gc.setStroke(finalColor);
+                event.consume();
+                return;
+            }
+
+            // --- LÓGICA DE GROSOR (Flechas Arriba / Abajo) ---
+            if (code == KeyCode.UP || code == KeyCode.PLUS || code == KeyCode.ADD) {
+                double newWidth = Math.min(50.0, manager.getCurrentLineWidth() + 2.0);
+                manager.setCurrentLineWidth(newWidth);
+                gc.setLineWidth(newWidth);
+                event.consume();
+            }
+            else if (code == KeyCode.DOWN || code == KeyCode.MINUS || code == KeyCode.SUBTRACT) {
+                double newWidth = Math.max(1.0, manager.getCurrentLineWidth() - 2.0);
+                manager.setCurrentLineWidth(newWidth);
+                gc.setLineWidth(newWidth);
+                event.consume();
+            }
+
+            // --- OPACIDAD GLOBAL DEL TRAZO (Flechas Izquierda / Derecha) ---
+            if (code == KeyCode.LEFT) {
+                // Disminuir opacidad global en saltos del 10%
+                Color current = manager.getCurrentColor();
+                double newAlpha = Math.max(0.1, current.getOpacity() - 0.1);
+                Color updatedColor = new Color(current.getRed(), current.getGreen(), current.getBlue(), newAlpha);
+                manager.setCurrentColor(updatedColor);
+                gc.setStroke(updatedColor);
+                event.consume();
+            }
+            else if (code == KeyCode.RIGHT) {
+                // Aumentar opacidad global en saltos del 10%
+                Color current = manager.getCurrentColor();
+                double newAlpha = Math.min(1.0, current.getOpacity() + 0.1);
+                Color updatedColor = new Color(current.getRed(), current.getGreen(), current.getBlue(), newAlpha);
+                manager.setCurrentColor(updatedColor);
+                gc.setStroke(updatedColor);
                 event.consume();
             }
         });

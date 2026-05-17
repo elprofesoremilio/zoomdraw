@@ -27,5 +27,5 @@ module es.elprofesoremilio.zoomdraw { // Mejor usar el nombre del paquete base
     exports es.elprofesoremilio.zoomdraw;
     exports es.elprofesoremilio.zoomdraw.core;
     exports es.elprofesoremilio.zoomdraw.ui;
-    exports es.elprofesoremilio.zoomdraw.app;
+    exports es.elprofesoremilio.zoomdraw.wayland;
 }
