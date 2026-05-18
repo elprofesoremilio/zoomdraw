@@ -77,34 +77,35 @@ public class AnnotationInputHandler {
         }
 
         // --- COLOR LOGIC ---
-        Color newBaseColor = null;
-        if (code == AppConfig.COLOR_RED_KEY)
-            newBaseColor = Color.RED;
-        else if (code == AppConfig.COLOR_GREEN_KEY)
-            newBaseColor = Color.GREEN;
-        else if (code == AppConfig.COLOR_BLUE_KEY)
-            newBaseColor = Color.BLUE;
-        else if (code == AppConfig.COLOR_YELLOW_KEY)
-            newBaseColor = Color.YELLOW;
-        else if (code == AppConfig.COLOR_ORANGE_KEY)
-            newBaseColor = Color.ORANGE;
-        else if (code == AppConfig.COLOR_MAGENTA_KEY)
-            newBaseColor = Color.MAGENTA;
-        else if (code == AppConfig.COLOR_BLACK_KEY)
-            newBaseColor = Color.BLACK;
-        else if (code == AppConfig.COLOR_WHITE_KEY)
-            newBaseColor = Color.WHITE;
+        if (!event.isControlDown() && !event.isAltDown()) {
+            Color newBaseColor = null;
+            if (code == AppConfig.COLOR_RED_KEY)
+                newBaseColor = Color.RED;
+            else if (code == AppConfig.COLOR_GREEN_KEY)
+                newBaseColor = Color.GREEN;
+            else if (code == AppConfig.COLOR_BLUE_KEY)
+                newBaseColor = Color.BLUE;
+            else if (code == AppConfig.COLOR_YELLOW_KEY)
+                newBaseColor = Color.YELLOW;
+            else if (code == AppConfig.COLOR_ORANGE_KEY)
+                newBaseColor = Color.ORANGE;
+            else if (code == AppConfig.COLOR_MAGENTA_KEY)
+                newBaseColor = Color.MAGENTA;
+            else if (code == AppConfig.COLOR_BLACK_KEY)
+                newBaseColor = Color.BLACK;
+            else if (code == AppConfig.COLOR_WHITE_KEY)
+                newBaseColor = Color.WHITE;
 
-        if (newBaseColor != null) {
-            // If Shift is pressed, apply default semi-transparent opacity. Otherwise, 1.0
-            // (opaque).
-            double alpha = isShift ? manager.getCurrentOpacity() : 1.0;
-            Color finalColor = new Color(newBaseColor.getRed(), newBaseColor.getGreen(), newBaseColor.getBlue(), alpha);
+            if (newBaseColor != null) {
+                // Preserve the current opacity
+                double alpha = manager.getCurrentOpacity();
+                Color finalColor = new Color(newBaseColor.getRed(), newBaseColor.getGreen(), newBaseColor.getBlue(), alpha);
 
-            manager.setCurrentColor(finalColor);
-            brushSettingsUpdater.updateBrushSettings();
-            event.consume();
-            return;
+                manager.setCurrentColor(finalColor);
+                brushSettingsUpdater.updateBrushSettings();
+                event.consume();
+                return;
+            }
         }
 
         // --- LINE WIDTH LOGIC (Up / Down arrows, +/-) ---

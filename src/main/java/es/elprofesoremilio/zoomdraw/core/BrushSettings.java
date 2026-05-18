@@ -8,7 +8,7 @@ import javafx.scene.paint.Color;
 public class BrushSettings {
     private Color currentColor = Color.RED;
     private double currentLineWidth = 3.0;
-    private double currentOpacity = 0.2; // 20% de opacidad para el modo sobresubrayado
+    private double currentOpacity = 1.0;
 
     public Color getCurrentColor() {
         return currentColor;

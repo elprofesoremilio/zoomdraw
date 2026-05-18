@@ -29,6 +29,17 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
 
     private final List<Point2D> currentStrokePoints = new ArrayList<>();
 
+    private enum DrawMode {
+        PENCIL, LINE, RECTANGLE, CIRCLE, ELLIPSE, ARROW
+    }
+    private DrawMode activeShapeMode = DrawMode.PENCIL;
+    private boolean isDrawingShape = false;
+    private Point2D shapeStartPoint = null;
+    
+    private boolean isRPressed = false;
+    private boolean isEPressed = false;
+    private boolean isFPressed = false;
+
     public AnnotationStage(AnnotationManager manager, Rectangle2D bounds, WritableImage background) {
         super(StageStyle.TRANSPARENT);
         this.manager = manager;
@@ -53,22 +64,74 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
         this.inputHandler = new AnnotationInputHandler(manager, this); // Pass 'this' as BrushSettingsUpdater
         this.inputHandler.attach(scene);
 
+        // Key trackers for shapes
+        scene.addEventHandler(javafx.scene.input.KeyEvent.KEY_PRESSED, event -> {
+            switch(event.getCode()) {
+                case R: isRPressed = true; break;
+                case E: isEPressed = true; break;
+                case F: isFPressed = true; break;
+                case ESCAPE: 
+                    if (isDrawingShape) {
+                        isDrawingShape = false;
+                        activeShapeMode = DrawMode.PENCIL;
+                        gcTemporal.clearRect(0, 0, canvasTemporal.getWidth(), canvasTemporal.getHeight());
+                        event.consume();
+                    }
+                    break;
+                default: break;
+            }
+        });
+
+        scene.addEventHandler(javafx.scene.input.KeyEvent.KEY_RELEASED, event -> {
+            switch(event.getCode()) {
+                case R: isRPressed = false; break;
+                case E: isEPressed = false; break;
+                case F: isFPressed = false; break;
+                default: break;
+            }
+        });
+
         // Mouse events for drawing
         scene.setOnMousePressed(event -> {
-            currentStrokePoints.clear();
-            currentStrokePoints.add(new Point2D(event.getX(), event.getY()));
+            if (event.isControlDown()) {
+                if (isRPressed) activeShapeMode = DrawMode.RECTANGLE;
+                else if (event.isAltDown() && isEPressed) activeShapeMode = DrawMode.CIRCLE;
+                else if (isEPressed) activeShapeMode = DrawMode.ELLIPSE;
+                else if (isFPressed) activeShapeMode = DrawMode.ARROW;
+                else activeShapeMode = DrawMode.LINE;
+                
+                isDrawingShape = true;
+                shapeStartPoint = new Point2D(event.getX(), event.getY());
+            } else {
+                activeShapeMode = DrawMode.PENCIL;
+                isDrawingShape = false;
+                currentStrokePoints.clear();
+                currentStrokePoints.add(new Point2D(event.getX(), event.getY()));
+            }
         });
 
         scene.setOnMouseDragged(event -> {
-            currentStrokePoints.add(new Point2D(event.getX(), event.getY()));
-            gcTemporal.clearRect(0, 0, canvasTemporal.getWidth(), canvasTemporal.getHeight());
-            redrawStroke(gcTemporal, currentStrokePoints);
+            if (isDrawingShape && activeShapeMode != DrawMode.PENCIL) {
+                gcTemporal.clearRect(0, 0, canvasTemporal.getWidth(), canvasTemporal.getHeight());
+                drawShape(gcTemporal, shapeStartPoint, new Point2D(event.getX(), event.getY()), activeShapeMode);
+            } else if (activeShapeMode == DrawMode.PENCIL) {
+                currentStrokePoints.add(new Point2D(event.getX(), event.getY()));
+                gcTemporal.clearRect(0, 0, canvasTemporal.getWidth(), canvasTemporal.getHeight());
+                redrawStroke(gcTemporal, currentStrokePoints);
+            }
         });
 
         scene.setOnMouseReleased(event -> {
-            gcTemporal.clearRect(0, 0, canvasTemporal.getWidth(), canvasTemporal.getHeight());
-            redrawStroke(gcPermanent, currentStrokePoints);
-            currentStrokePoints.clear();
+            if (isDrawingShape && activeShapeMode != DrawMode.PENCIL) {
+                gcTemporal.clearRect(0, 0, canvasTemporal.getWidth(), canvasTemporal.getHeight());
+                drawShape(gcPermanent, shapeStartPoint, new Point2D(event.getX(), event.getY()), activeShapeMode);
+                isDrawingShape = false;
+                activeShapeMode = DrawMode.PENCIL;
+            } else if (activeShapeMode == DrawMode.PENCIL) {
+                gcTemporal.clearRect(0, 0, canvasTemporal.getWidth(), canvasTemporal.getHeight());
+                redrawStroke(gcPermanent, currentStrokePoints);
+                currentStrokePoints.clear();
+            }
         });
 
         // Recuperar foco al clic
@@ -117,6 +180,67 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
         for (int i = 1; i < points.size(); i++) {
             gc.lineTo(points.get(i).getX(), points.get(i).getY());
         }
+        gc.stroke();
+    }
+
+    private void drawShape(GraphicsContext gc, Point2D start, Point2D end, DrawMode mode) {
+        double x1 = start.getX();
+        double y1 = start.getY();
+        double x2 = end.getX();
+        double y2 = end.getY();
+
+        switch (mode) {
+            case LINE:
+                gc.strokeLine(x1, y1, x2, y2);
+                break;
+            case RECTANGLE:
+                double rx = Math.min(x1, x2);
+                double ry = Math.min(y1, y2);
+                double rw = Math.abs(x1 - x2);
+                double rh = Math.abs(y1 - y2);
+                gc.strokeRect(rx, ry, rw, rh);
+                break;
+            case CIRCLE:
+                double radius = Math.hypot(x2 - x1, y2 - y1);
+                gc.strokeOval(x1 - radius, y1 - radius, radius * 2, radius * 2);
+                break;
+            case ELLIPSE:
+                double ex = Math.min(x1, x2);
+                double ey = Math.min(y1, y2);
+                double ew = Math.abs(x1 - x2);
+                double eh = Math.abs(y1 - y2);
+                gc.strokeOval(ex, ey, ew, eh);
+                break;
+            case ARROW:
+                drawArrow(gc, x1, y1, x2, y2);
+                break;
+            default:
+                break;
+        }
+    }
+
+    private void drawArrow(GraphicsContext gc, double x1, double y1, double x2, double y2) {
+        gc.strokeLine(x1, y1, x2, y2);
+        
+        double angle = Math.atan2(y2 - y1, x2 - x1);
+        double headLength = Math.max(15, manager.getCurrentLineWidth() * 3);
+        
+        double angle1 = angle - Math.PI / 6;
+        double angle2 = angle + Math.PI / 6;
+        
+        double px1 = x2 - headLength * Math.cos(angle1);
+        double py1 = y2 - headLength * Math.sin(angle1);
+        double px2 = x2 - headLength * Math.cos(angle2);
+        double py2 = y2 - headLength * Math.sin(angle2);
+        
+        gc.beginPath();
+        gc.moveTo(x2, y2);
+        gc.lineTo(px1, py1);
+        gc.stroke();
+        
+        gc.beginPath();
+        gc.moveTo(x2, y2);
+        gc.lineTo(px2, py2);
         gc.stroke();
     }
 }
