@@ -10,7 +10,6 @@ import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.stage.Stage;
 
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class AppLauncher extends Application {
@@ -44,4 +43,5 @@ public class AppLauncher extends Application {
     @Override
     public void stop() {
         globalKeyHook.unregister();
-    }}
+    }
+}

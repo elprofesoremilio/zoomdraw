@@ -1,6 +1,8 @@
 package es.elprofesoremilio.zoomdraw.ui;
 
+import es.elprofesoremilio.zoomdraw.commands.*;
 import es.elprofesoremilio.zoomdraw.core.AnnotationManager;
+import es.elprofesoremilio.zoomdraw.core.commands.DrawMode;
 import javafx.geometry.Point2D;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
@@ -13,6 +15,7 @@ import javafx.scene.shape.StrokeLineCap;
 import javafx.scene.shape.StrokeLineJoin;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
+import javafx.scene.input.KeyCode;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,10 +31,9 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
     private final GraphicsContext gcTemporal;
 
     private final List<Point2D> currentStrokePoints = new ArrayList<>();
+    private final CommandHistory commandHistory = new CommandHistory();
+    private final WritableImage background;
 
-    private enum DrawMode {
-        PENCIL, LINE, RECTANGLE, CIRCLE, ELLIPSE, ARROW
-    }
     private DrawMode activeShapeMode = DrawMode.PENCIL;
     private boolean isDrawingShape = false;
     private Point2D shapeStartPoint = null;
@@ -39,15 +41,19 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
     private boolean isRPressed = false;
     private boolean isEPressed = false;
     private boolean isFPressed = false;
+    private boolean isCPressed = false;
+    
+    private WritableImage currentCanvasSnapshot = null;
 
     public AnnotationStage(AnnotationManager manager, Rectangle2D bounds, WritableImage background) {
         super(StageStyle.TRANSPARENT);
         this.manager = manager;
+        this.background = background;
 
         // Initialize permanent canvas
         canvasPermanent = new Canvas(bounds.getWidth(), bounds.getHeight());
         gcPermanent = canvasPermanent.getGraphicsContext2D();
-        gcPermanent.drawImage(background, 0, 0); // Draw background once
+        gcPermanent.drawImage(this.background, 0, 0); // Draw background once
 
         // Initialize temporal canvas
         canvasTemporal = new Canvas(bounds.getWidth(), bounds.getHeight());
@@ -66,10 +72,22 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
 
         // Key trackers for shapes
         scene.addEventHandler(javafx.scene.input.KeyEvent.KEY_PRESSED, event -> {
+            if (event.isControlDown()) {
+                if (event.getCode() == KeyCode.Z) {
+                    commandHistory.undo(this::redrawAll);
+                    event.consume();
+                    return;
+                } else if (event.getCode() == KeyCode.Y) {
+                    commandHistory.redo(this::redrawAll);
+                    event.consume();
+                    return;
+                }
+            }
             switch(event.getCode()) {
                 case R: isRPressed = true; break;
                 case E: isEPressed = true; break;
                 case F: isFPressed = true; break;
+                case C: isCPressed = true; break;
                 case ESCAPE: 
                     if (isDrawingShape) {
                         isDrawingShape = false;
@@ -87,6 +105,7 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
                 case R: isRPressed = false; break;
                 case E: isEPressed = false; break;
                 case F: isFPressed = false; break;
+                case C: isCPressed = false; break;
                 default: break;
             }
         });
@@ -102,6 +121,19 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
                 
                 isDrawingShape = true;
                 shapeStartPoint = new Point2D(event.getX(), event.getY());
+            } else if (event.isShiftDown() && (isRPressed || isEPressed || isCPressed)) {
+                if (isRPressed) activeShapeMode = DrawMode.FILLED_RECTANGLE;
+                else if (event.isAltDown() && isEPressed) activeShapeMode = DrawMode.FILLED_CIRCLE;
+                else if (isEPressed) activeShapeMode = DrawMode.FILLED_ELLIPSE;
+                else if (isCPressed) {
+                    activeShapeMode = DrawMode.CENSOR_RECTANGLE;
+                    javafx.scene.SnapshotParameters params = new javafx.scene.SnapshotParameters();
+                    params.setFill(Color.TRANSPARENT);
+                    currentCanvasSnapshot = canvasPermanent.snapshot(params, null);
+                }
+                
+                isDrawingShape = true;
+                shapeStartPoint = new Point2D(event.getX(), event.getY());
             } else {
                 activeShapeMode = DrawMode.PENCIL;
                 isDrawingShape = false;
@@ -113,23 +145,34 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
         scene.setOnMouseDragged(event -> {
             if (isDrawingShape && activeShapeMode != DrawMode.PENCIL) {
                 gcTemporal.clearRect(0, 0, canvasTemporal.getWidth(), canvasTemporal.getHeight());
-                drawShape(gcTemporal, shapeStartPoint, new Point2D(event.getX(), event.getY()), activeShapeMode);
+                ShapeCommand previewShape = new ShapeCommand(shapeStartPoint, new Point2D(event.getX(), event.getY()), 
+                        activeShapeMode, manager.getCurrentColor(), manager.getCurrentLineWidth(), currentCanvasSnapshot);
+                previewShape.execute(gcTemporal);
             } else if (activeShapeMode == DrawMode.PENCIL) {
                 currentStrokePoints.add(new Point2D(event.getX(), event.getY()));
                 gcTemporal.clearRect(0, 0, canvasTemporal.getWidth(), canvasTemporal.getHeight());
-                redrawStroke(gcTemporal, currentStrokePoints);
+                PathCommand previewPath = new PathCommand(currentStrokePoints, manager.getCurrentColor(), manager.getCurrentLineWidth());
+                previewPath.execute(gcTemporal);
             }
         });
 
         scene.setOnMouseReleased(event -> {
             if (isDrawingShape && activeShapeMode != DrawMode.PENCIL) {
                 gcTemporal.clearRect(0, 0, canvasTemporal.getWidth(), canvasTemporal.getHeight());
-                drawShape(gcPermanent, shapeStartPoint, new Point2D(event.getX(), event.getY()), activeShapeMode);
+                ShapeCommand finalShape = new ShapeCommand(shapeStartPoint, new Point2D(event.getX(), event.getY()), 
+                        activeShapeMode, manager.getCurrentColor(), manager.getCurrentLineWidth(), currentCanvasSnapshot);
+                commandHistory.execute(finalShape, gcPermanent);
+                redrawAll();
                 isDrawingShape = false;
                 activeShapeMode = DrawMode.PENCIL;
+                currentCanvasSnapshot = null;
             } else if (activeShapeMode == DrawMode.PENCIL) {
                 gcTemporal.clearRect(0, 0, canvasTemporal.getWidth(), canvasTemporal.getHeight());
-                redrawStroke(gcPermanent, currentStrokePoints);
+                if (currentStrokePoints.size() >= 2) {
+                    PathCommand finalPath = new PathCommand(currentStrokePoints, manager.getCurrentColor(), manager.getCurrentLineWidth());
+                    commandHistory.execute(finalPath, gcPermanent);
+                    redrawAll();
+                }
                 currentStrokePoints.clear();
             }
         });
@@ -171,76 +214,12 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
         gcTemporal.setLineJoin(StrokeLineJoin.ROUND);
     }
 
-    private void redrawStroke(GraphicsContext gc, List<Point2D> points) {
-        if (points.size() < 2) {
-            return;
+    private void redrawAll() {
+        gcPermanent.clearRect(0, 0, canvasPermanent.getWidth(), canvasPermanent.getHeight());
+        gcPermanent.drawImage(background, 0, 0);
+        for (DrawingCommand cmd : commandHistory.getHistory()) {
+            cmd.execute(gcPermanent);
         }
-        gc.beginPath();
-        gc.moveTo(points.get(0).getX(), points.get(0).getY());
-        for (int i = 1; i < points.size(); i++) {
-            gc.lineTo(points.get(i).getX(), points.get(i).getY());
-        }
-        gc.stroke();
-    }
-
-    private void drawShape(GraphicsContext gc, Point2D start, Point2D end, DrawMode mode) {
-        double x1 = start.getX();
-        double y1 = start.getY();
-        double x2 = end.getX();
-        double y2 = end.getY();
-
-        switch (mode) {
-            case LINE:
-                gc.strokeLine(x1, y1, x2, y2);
-                break;
-            case RECTANGLE:
-                double rx = Math.min(x1, x2);
-                double ry = Math.min(y1, y2);
-                double rw = Math.abs(x1 - x2);
-                double rh = Math.abs(y1 - y2);
-                gc.strokeRect(rx, ry, rw, rh);
-                break;
-            case CIRCLE:
-                double radius = Math.hypot(x2 - x1, y2 - y1);
-                gc.strokeOval(x1 - radius, y1 - radius, radius * 2, radius * 2);
-                break;
-            case ELLIPSE:
-                double ex = Math.min(x1, x2);
-                double ey = Math.min(y1, y2);
-                double ew = Math.abs(x1 - x2);
-                double eh = Math.abs(y1 - y2);
-                gc.strokeOval(ex, ey, ew, eh);
-                break;
-            case ARROW:
-                drawArrow(gc, x1, y1, x2, y2);
-                break;
-            default:
-                break;
-        }
-    }
-
-    private void drawArrow(GraphicsContext gc, double x1, double y1, double x2, double y2) {
-        gc.strokeLine(x1, y1, x2, y2);
-        
-        double angle = Math.atan2(y2 - y1, x2 - x1);
-        double headLength = Math.max(15, manager.getCurrentLineWidth() * 3);
-        
-        double angle1 = angle - Math.PI / 6;
-        double angle2 = angle + Math.PI / 6;
-        
-        double px1 = x2 - headLength * Math.cos(angle1);
-        double py1 = y2 - headLength * Math.sin(angle1);
-        double px2 = x2 - headLength * Math.cos(angle2);
-        double py2 = y2 - headLength * Math.sin(angle2);
-        
-        gc.beginPath();
-        gc.moveTo(x2, y2);
-        gc.lineTo(px1, py1);
-        gc.stroke();
-        
-        gc.beginPath();
-        gc.moveTo(x2, y2);
-        gc.lineTo(px2, py2);
-        gc.stroke();
+        updateBrushSettings();
     }
 }

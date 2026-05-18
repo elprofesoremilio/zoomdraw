@@ -1,6 +1,5 @@
-package es.elprofesoremilio.zoomdraw.commands;
+package es.elprofesoremilio.zoomdraw.core.commands;
 
-import es.elprofesoremilio.zoomdraw.core.commands.DrawMode;
 import javafx.geometry.Point2D;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.WritableImage;
@@ -14,20 +13,21 @@ public class ShapeCommand implements DrawingCommand {
     private final DrawMode mode;
     private final Color color;
     private final double lineWidth;
-    private final WritableImage canvasSnapshot;
+    private final WritableImage snapshot;
 
-    public ShapeCommand(Point2D start, Point2D end, DrawMode mode, Color color, double lineWidth, WritableImage canvasSnapshot) {
+    public ShapeCommand(Point2D start, Point2D end, DrawMode mode, Color color, double lineWidth, WritableImage snapshot) {
         this.start = start;
         this.end = end;
         this.mode = mode;
         this.color = color;
         this.lineWidth = lineWidth;
-        this.canvasSnapshot = canvasSnapshot;
+        this.snapshot = snapshot; // Only used for CENSOR_RECTANGLE
     }
 
     @Override
     public void execute(GraphicsContext gc) {
         gc.setStroke(color);
+        gc.setFill(color);
         gc.setLineWidth(lineWidth);
         gc.setLineCap(StrokeLineCap.ROUND);
         gc.setLineJoin(StrokeLineJoin.ROUND);
@@ -53,7 +53,6 @@ public class ShapeCommand implements DrawingCommand {
                 double ryF = Math.min(y1, y2);
                 double rwF = Math.abs(x1 - x2);
                 double rhF = Math.abs(y1 - y2);
-                gc.setFill(color);
                 gc.fillRect(rxF, ryF, rwF, rhF);
                 break;
             case CIRCLE:
@@ -62,7 +61,6 @@ public class ShapeCommand implements DrawingCommand {
                 break;
             case FILLED_CIRCLE:
                 double radiusF = Math.hypot(x2 - x1, y2 - y1);
-                gc.setFill(color);
                 gc.fillOval(x1 - radiusF, y1 - radiusF, radiusF * 2, radiusF * 2);
                 break;
             case ELLIPSE:
@@ -77,7 +75,6 @@ public class ShapeCommand implements DrawingCommand {
                 double eyF = Math.min(y1, y2);
                 double ewF = Math.abs(x1 - x2);
                 double ehF = Math.abs(y1 - y2);
-                gc.setFill(color);
                 gc.fillOval(exF, eyF, ewF, ehF);
                 break;
             case CENSOR_RECTANGLE:
@@ -121,12 +118,12 @@ public class ShapeCommand implements DrawingCommand {
     }
 
     private void drawCensoredRect(GraphicsContext gc, double x, double y, double w, double h) {
-        if (w <= 0 || h <= 0 || canvasSnapshot == null) return;
+        if (w <= 0 || h <= 0 || snapshot == null) return;
         
         int startX = (int) Math.max(0, x);
         int startY = (int) Math.max(0, y);
-        int endX = (int) Math.min(canvasSnapshot.getWidth(), x + w);
-        int endY = (int) Math.min(canvasSnapshot.getHeight(), y + h);
+        int endX = (int) Math.min(snapshot.getWidth(), x + w);
+        int endY = (int) Math.min(snapshot.getHeight(), y + h);
         
         int width = endX - startX;
         int height = endY - startY;
@@ -135,7 +132,7 @@ public class ShapeCommand implements DrawingCommand {
 
         int blockSize = 15;
         
-        javafx.scene.image.PixelReader reader = canvasSnapshot.getPixelReader();
+        javafx.scene.image.PixelReader reader = snapshot.getPixelReader();
         WritableImage censoredImage = new WritableImage(width, height);
         javafx.scene.image.PixelWriter writer = censoredImage.getPixelWriter();
 
