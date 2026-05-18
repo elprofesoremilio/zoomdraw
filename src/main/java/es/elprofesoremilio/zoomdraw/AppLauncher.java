@@ -1,6 +1,8 @@
 package es.elprofesoremilio.zoomdraw;
 
 import com.github.kwhat.jnativehook.GlobalScreen;
+import es.elprofesoremilio.zoomdraw.commands.StopAnnotationModeCommand;
+import es.elprofesoremilio.zoomdraw.commands.ToggleAnnotationModeCommand;
 import es.elprofesoremilio.zoomdraw.core.AnnotationManager;
 import es.elprofesoremilio.zoomdraw.input.GlobalKeyHook;
 import javafx.application.Application;
@@ -29,8 +31,12 @@ public class AppLauncher extends Application {
         // Inicializar el mediador central
         annotationManager = new AnnotationManager();
 
+        // Crear comandos
+        ToggleAnnotationModeCommand toggleCommand = new ToggleAnnotationModeCommand(annotationManager);
+        StopAnnotationModeCommand stopCommand = new StopAnnotationModeCommand(annotationManager);
+
         // Registrar el hook global
-        globalKeyHook = new GlobalKeyHook(annotationManager);
+        globalKeyHook = new GlobalKeyHook(annotationManager, toggleCommand, stopCommand);
         globalKeyHook.register();
     }
 

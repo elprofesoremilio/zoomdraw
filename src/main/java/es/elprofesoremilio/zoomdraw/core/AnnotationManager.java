@@ -13,18 +13,18 @@ public class AnnotationManager {
 
     private AnnotationStage currentStage = null;
     private volatile boolean active = false;
+    private final BrushSettings brushSettings; // Use the new BrushSettings class
 
-    // --- ESTADO GUARDADO DEL PINCEL (v0.2) ---
-    private javafx.scene.paint.Color currentColor = javafx.scene.paint.Color.RED;
-    private double currentLineWidth = 3.0;
-    private final double defaultSemiTransparentOpacity = 0.4; // 40% de opacidad para el modo sobresubrayado
+    public AnnotationManager() {
+        this.brushSettings = new BrushSettings();
+    }
 
-    public double getDefaultSemiTransparentOpacity() { return defaultSemiTransparentOpacity; }
-    public javafx.scene.paint.Color getCurrentColor() { return currentColor; }
-    public void setCurrentColor(javafx.scene.paint.Color color) { this.currentColor = color; }
+    public double getDefaultSemiTransparentOpacity() { return brushSettings.getDefaultSemiTransparentOpacity(); }
+    public javafx.scene.paint.Color getCurrentColor() { return brushSettings.getCurrentColor(); }
+    public void setCurrentColor(javafx.scene.paint.Color color) { this.brushSettings.setCurrentColor(color); }
 
-    public double getCurrentLineWidth() { return currentLineWidth; }
-    public void setCurrentLineWidth(double width) { this.currentLineWidth = width; }
+    public double getCurrentLineWidth() { return brushSettings.getCurrentLineWidth(); }
+    public void setCurrentLineWidth(double width) { this.brushSettings.setCurrentLineWidth(width); }
 
     public void toggleAnnotationMode() {
         // Forzamos que todo el cambio de estado ocurra en el hilo de JavaFX

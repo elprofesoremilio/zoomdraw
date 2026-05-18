@@ -4,15 +4,21 @@ import com.github.kwhat.jnativehook.GlobalScreen;
 import com.github.kwhat.jnativehook.NativeHookException;
 import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent;
 import com.github.kwhat.jnativehook.keyboard.NativeKeyListener;
+import es.elprofesoremilio.zoomdraw.commands.Command;
 import es.elprofesoremilio.zoomdraw.core.AnnotationManager;
-import javafx.application.Platform;
 
 public class GlobalKeyHook implements NativeKeyListener {
 
-    private final AnnotationManager manager;
+    private final AnnotationManager manager; // Still needed for isActive() check
+    private final Command toggleAnnotationModeCommand;
+    private final Command stopAnnotationModeCommand;
 
-    public GlobalKeyHook(AnnotationManager manager) {
+    public GlobalKeyHook(AnnotationManager manager,
+                         Command toggleAnnotationModeCommand,
+                         Command stopAnnotationModeCommand) {
         this.manager = manager;
+        this.toggleAnnotationModeCommand = toggleAnnotationModeCommand;
+        this.stopAnnotationModeCommand = stopAnnotationModeCommand;
     }
 
     public void register() {
@@ -34,24 +40,17 @@ public class GlobalKeyHook implements NativeKeyListener {
 
     @Override
     public void nativeKeyPressed(NativeKeyEvent e) {
-        // LOG TEMPORAL: Si ves esto en consola al pulsar teclas, el Hook funciona.
-//        System.out.println("Key Pressed: " + NativeKeyEvent.getKeyText(e.getKeyCode()));
-
         boolean ctrlDown = (e.getModifiers() & NativeKeyEvent.CTRL_MASK) != 0;
         int keyCode = e.getKeyCode();
 
         // CTRL + 1
         if (ctrlDown && keyCode == NativeKeyEvent.VC_1) {
-            Platform.runLater(manager::toggleAnnotationMode);
+            toggleAnnotationModeCommand.execute();
         }
 
-        // ESC (solo si la app está activa pero no tiene el foco JavaFX)
+        // ESC (solo si la app está activa)
         if (keyCode == NativeKeyEvent.VC_ESCAPE && manager.isActive()) {
-            Platform.runLater(() -> {
-                if (manager.isStageFocused()) {
-                    manager.stopAnnotationMode();
-                }
-            });
+            stopAnnotationModeCommand.execute();
         }
     }
 }
