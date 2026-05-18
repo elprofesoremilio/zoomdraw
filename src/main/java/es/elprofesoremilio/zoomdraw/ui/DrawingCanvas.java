@@ -1,5 +1,6 @@
 package es.elprofesoremilio.zoomdraw.ui;
 
+import es.elprofesoremilio.zoomdraw.config.AppConfig;
 import es.elprofesoremilio.zoomdraw.core.AnnotationManager;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
@@ -41,7 +42,12 @@ public class DrawingCanvas extends Canvas {
             // Fallback (Plan B): Un cristal hiper-transparente en vez de gris oscuro.
             // Opacidad 0.01 es invisible al ojo humano, pero X11 lo detecta como "sólido"
             // para que los clics no se cuelen a las ventanas de atrás.
-            gc.setFill(new Color(1.0, 1.0, 1.0, 0.01));
+            gc.setFill(new Color(
+                AppConfig.FALLBACK_BACKGROUND_COLOR.getRed(),
+                AppConfig.FALLBACK_BACKGROUND_COLOR.getGreen(),
+                AppConfig.FALLBACK_BACKGROUND_COLOR.getBlue(),
+                AppConfig.FALLBACK_BACKGROUND_OPACITY
+            ));
             gc.fillRect(0, 0, getWidth(), getHeight());
             System.out.println("Fondo capturado nulo, usando cristal transparente.");
         }

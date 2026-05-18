@@ -3,6 +3,7 @@ package es.elprofesoremilio.zoomdraw;
 import com.github.kwhat.jnativehook.GlobalScreen;
 import es.elprofesoremilio.zoomdraw.commands.StopAnnotationModeCommand;
 import es.elprofesoremilio.zoomdraw.commands.ToggleAnnotationModeCommand;
+import es.elprofesoremilio.zoomdraw.config.AppConfig;
 import es.elprofesoremilio.zoomdraw.core.AnnotationManager;
 import es.elprofesoremilio.zoomdraw.input.GlobalKeyHook;
 import javafx.application.Application;
@@ -21,7 +22,7 @@ public class AppLauncher extends Application {
     public void start(Stage primaryStage) {
         // Silenciar logs de JNativeHook
         Logger logger = Logger.getLogger(GlobalScreen.class.getPackage().getName());
-        logger.setLevel(Level.OFF);
+        logger.setLevel(AppConfig.JNATIVEHOOK_LOG_LEVEL);
         logger.setUseParentHandlers(false);
 
         // Ocultar stage primario e impedir cierre implícito

@@ -1,5 +1,6 @@
 package es.elprofesoremilio.zoomdraw.ui;
 
+import es.elprofesoremilio.zoomdraw.config.AppConfig;
 import es.elprofesoremilio.zoomdraw.core.AnnotationManager;
 import javafx.scene.Scene;
 import javafx.scene.input.KeyCode;
@@ -30,10 +31,10 @@ public class AnnotationInputHandler {
             double newWidth = manager.getCurrentLineWidth();
             if (event.getDeltaY() > 0) {
                 // Scroll up: increase line width
-                newWidth = Math.min(50.0, newWidth + 2.0);
+                newWidth = Math.min(AppConfig.LINE_WIDTH_MAX, newWidth + AppConfig.LINE_WIDTH_SCROLL_STEP);
             } else if (event.getDeltaY() < 0) {
                 // Scroll down: decrease line width
-                newWidth = Math.max(1.0, newWidth - 2.0);
+                newWidth = Math.max(AppConfig.LINE_WIDTH_MIN, newWidth - AppConfig.LINE_WIDTH_SCROLL_STEP);
             }
             manager.setCurrentLineWidth(newWidth);
             drawingCanvas.updateBrushSettings();
@@ -46,7 +47,7 @@ public class AnnotationInputHandler {
         boolean isShift = event.isShiftDown();
 
         // EXIT
-        if (code == KeyCode.ESCAPE) {
+        if (code == AppConfig.EXIT_KEY) {
             manager.stopAnnotationMode();
             event.consume();
             return;
@@ -54,17 +55,15 @@ public class AnnotationInputHandler {
 
         // --- COLOR LOGIC ---
         Color newBaseColor = null;
-        switch (code) {
-            case R: newBaseColor = Color.RED; break;
-            case G: newBaseColor = Color.GREEN; break;
-            case B: newBaseColor = Color.BLUE; break;
-            case Y: newBaseColor = Color.YELLOW; break;
-            case O: newBaseColor = Color.ORANGE; break;
-            case P: newBaseColor = Color.MAGENTA; break; // Pink/Purple
-            case K: newBaseColor = Color.BLACK; break;
-            case W: newBaseColor = Color.WHITE; break;
-            default: break;
-        }
+        if (code == AppConfig.COLOR_RED_KEY) newBaseColor = Color.RED;
+        else if (code == AppConfig.COLOR_GREEN_KEY) newBaseColor = AppConfig.GREEN;
+        else if (code == AppConfig.COLOR_BLUE_KEY) newBaseColor = AppConfig.BLUE;
+        else if (code == AppConfig.COLOR_YELLOW_KEY) newBaseColor = AppConfig.YELLOW;
+        else if (code == AppConfig.COLOR_ORANGE_KEY) newBaseColor = AppConfig.ORANGE;
+        else if (code == AppConfig.COLOR_MAGENTA_KEY) newBaseColor = AppConfig.MAGENTA;
+        else if (code == AppConfig.COLOR_BLACK_KEY) newBaseColor = AppConfig.BLACK;
+        else if (code == AppConfig.COLOR_WHITE_KEY) newBaseColor = AppConfig.WHITE;
+
 
         if (newBaseColor != null) {
             // If Shift is pressed, apply default semi-transparent opacity. Otherwise, 1.0 (opaque).
@@ -78,33 +77,33 @@ public class AnnotationInputHandler {
         }
 
         // --- LINE WIDTH LOGIC (Up / Down arrows, +/-) ---
-        if (code == KeyCode.UP || code == KeyCode.PLUS || code == KeyCode.ADD) {
-            double newWidth = Math.min(50.0, manager.getCurrentLineWidth() + 2.0);
+        if (code == AppConfig.LINE_WIDTH_INCREASE_KEY_1 || code == AppConfig.LINE_WIDTH_INCREASE_KEY_2 || code == AppConfig.LINE_WIDTH_INCREASE_KEY_3) {
+            double newWidth = Math.min(AppConfig.LINE_WIDTH_MAX, manager.getCurrentLineWidth() + AppConfig.LINE_WIDTH_SCROLL_STEP);
             manager.setCurrentLineWidth(newWidth);
             drawingCanvas.updateBrushSettings();
             event.consume();
         }
-        else if (code == KeyCode.DOWN || code == KeyCode.MINUS || code == KeyCode.SUBTRACT) {
-            double newWidth = Math.max(1.0, manager.getCurrentLineWidth() - 2.0);
+        else if (code == AppConfig.LINE_WIDTH_DECREASE_KEY_1 || code == AppConfig.LINE_WIDTH_DECREASE_KEY_2 || code == AppConfig.LINE_WIDTH_DECREASE_KEY_3) {
+            double newWidth = Math.max(AppConfig.LINE_WIDTH_MIN, manager.getCurrentLineWidth() - AppConfig.LINE_WIDTH_SCROLL_STEP);
             manager.setCurrentLineWidth(newWidth);
             drawingCanvas.updateBrushSettings();
             event.consume();
         }
 
         // --- GLOBAL OPACITY LOGIC (Left / Right arrows) ---
-        if (code == KeyCode.LEFT) {
+        if (code == AppConfig.GLOBAL_OPACITY_DECREASE_KEY) {
             // Decrease global opacity by 10% steps
             Color current = manager.getCurrentColor();
-            double newAlpha = Math.max(0.1, current.getOpacity() - 0.1);
+            double newAlpha = Math.max(AppConfig.GLOBAL_OPACITY_MIN, current.getOpacity() - AppConfig.GLOBAL_OPACITY_STEP);
             Color updatedColor = new Color(current.getRed(), current.getGreen(), current.getBlue(), newAlpha);
             manager.setCurrentColor(updatedColor);
             drawingCanvas.updateBrushSettings();
             event.consume();
         }
-        else if (code == KeyCode.RIGHT) {
+        else if (code == AppConfig.GLOBAL_OPACITY_INCREASE_KEY) {
             // Increase global opacity by 10% steps
             Color current = manager.getCurrentColor();
-            double newAlpha = Math.min(1.0, current.getOpacity() + 0.1);
+            double newAlpha = Math.min(AppConfig.GLOBAL_OPACITY_MAX, current.getOpacity() + AppConfig.GLOBAL_OPACITY_STEP);
             Color updatedColor = new Color(current.getRed(), current.getGreen(), current.getBlue(), newAlpha);
             manager.setCurrentColor(updatedColor);
             drawingCanvas.updateBrushSettings();

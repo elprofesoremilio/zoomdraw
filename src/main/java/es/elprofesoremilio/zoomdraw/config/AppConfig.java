@@ -1,0 +1,87 @@
+package es.elprofesoremilio.zoomdraw.config;
+
+import javafx.scene.input.KeyCode;
+import javafx.scene.paint.Color;
+import javafx.scene.text.FontWeight;
+
+import java.util.logging.Level;
+
+public class AppConfig {
+
+    // System Properties
+    public static final String UI_SCALE = "1.0";
+    public static final String JDK_GTK_VERSION = "3";
+    public static final boolean AWT_HEADLESS = false;
+    public static final boolean JAVA2D_OPENGL = false;
+
+    // JNativeHook Logger Level
+    public static final Level JNATIVEHOOK_LOG_LEVEL = Level.OFF;
+
+    // DrawingCanvas Fallback Background
+    public static final Color FALLBACK_BACKGROUND_COLOR = Color.WHITE;
+    public static final double FALLBACK_BACKGROUND_OPACITY = 0.01;
+
+    // CanvasRenderer
+    public static final Color RENDERER_BACKGROUND_COLOR = Color.BLACK;
+    public static final Color RENDERER_MAIN_TEXT_COLOR = Color.WHITE;
+    public static final String RENDERER_MAIN_FONT_FAMILY = "System";
+    public static final FontWeight RENDERER_MAIN_FONT_WEIGHT = FontWeight.BOLD;
+    public static final double RENDERER_MAIN_FONT_SIZE = 28;
+    public static final String RENDERER_MAIN_TEXT = "Pulse ESC para salir";
+    public static final Color RENDERER_SUB_TEXT_COLOR = Color.LIGHTGRAY;
+    public static final String RENDERER_SUB_FONT_FAMILY = "System";
+    public static final FontWeight RENDERER_SUB_FONT_WEIGHT = FontWeight.NORMAL;
+    public static final double RENDERER_SUB_FONT_SIZE = 16;
+    public static final String RENDERER_SUB_TEXT = "(o CTRL+1 para activar/desactivar)";
+    public static final double RENDERER_SUB_TEXT_OFFSET_Y = 44;
+
+    // AnnotationInputHandler
+    public static final double LINE_WIDTH_SCROLL_STEP = 2.0;
+    public static final double LINE_WIDTH_MIN = 1.0;
+    public static final double LINE_WIDTH_MAX = 50.0;
+    public static final double GLOBAL_OPACITY_STEP = 0.1;
+    public static final double GLOBAL_OPACITY_MIN = 0.1;
+    public static final double GLOBAL_OPACITY_MAX = 1.0;
+
+    // KeyCodes for colors
+    public static final KeyCode COLOR_RED_KEY = KeyCode.R;
+    public static final KeyCode COLOR_GREEN_KEY = KeyCode.G;
+    public static final KeyCode COLOR_BLUE_KEY = KeyCode.B;
+    public static final KeyCode COLOR_YELLOW_KEY = KeyCode.Y;
+    public static final KeyCode COLOR_ORANGE_KEY = KeyCode.O;
+    public static final KeyCode COLOR_MAGENTA_KEY = KeyCode.P; // Pink/Purple
+    public static final KeyCode COLOR_BLACK_KEY = KeyCode.K;
+    public static final KeyCode COLOR_WHITE_KEY = KeyCode.W;
+
+    // KeyCodes for line width
+    public static final KeyCode LINE_WIDTH_INCREASE_KEY_1 = KeyCode.UP;
+    public static final KeyCode LINE_WIDTH_INCREASE_KEY_2 = KeyCode.PLUS;
+    public static final KeyCode LINE_WIDTH_INCREASE_KEY_3 = KeyCode.ADD;
+    public static final KeyCode LINE_WIDTH_DECREASE_KEY_1 = KeyCode.DOWN;
+    public static final KeyCode LINE_WIDTH_DECREASE_KEY_2 = KeyCode.MINUS;
+    public static final KeyCode LINE_WIDTH_DECREASE_KEY_3 = KeyCode.SUBTRACT;
+
+    // Colors
+    public static final Color GREEN = new Color(0,1,0.1,1);
+    public static final Color BLUE = new Color(0,0.2,1,1);
+    public static final Color YELLOW = Color.YELLOW;
+    public static final Color ORANGE = new Color(1,0.45,0,1);
+    public static final Color MAGENTA = Color.MAGENTA;
+    public static final Color BLACK = Color.BLACK;
+    public static final Color WHITE = Color.WHITE;
+
+    // KeyCodes for global opacity
+    public static final KeyCode GLOBAL_OPACITY_DECREASE_KEY = KeyCode.LEFT;
+    public static final KeyCode GLOBAL_OPACITY_INCREASE_KEY = KeyCode.RIGHT;
+
+    // KeyCode for exit
+    public static final KeyCode EXIT_KEY = KeyCode.ESCAPE;
+
+
+    public static void loadSystemProperties() {
+        System.setProperty("sun.java2d.uiScale", UI_SCALE);
+        System.setProperty("jdk.gtk.version", JDK_GTK_VERSION);
+        System.setProperty("java.awt.headless", String.valueOf(AWT_HEADLESS));
+        System.setProperty("sun.java2d.opengl", String.valueOf(JAVA2D_OPENGL));
+    }
+}
