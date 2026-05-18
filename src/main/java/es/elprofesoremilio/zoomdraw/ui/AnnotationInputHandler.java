@@ -40,8 +40,7 @@ public class AnnotationInputHandler {
             brushSettingsUpdater.updateBrushSettings();
             event.consume();
         } else if (event.isShiftDown()) {
-            double currentOpacity = manager.getCurrentOpacity();
-            double newAlpha = currentOpacity;
+            double newAlpha = manager.getCurrentOpacity();
             
             // Note: JavaFX converts vertical scrolling to horizontal scrolling when SHIFT is held.
             // Therefore, we must check both deltaY and deltaX.
@@ -80,21 +79,21 @@ public class AnnotationInputHandler {
         if (!event.isControlDown() && !event.isAltDown()) {
             Color newBaseColor = null;
             if (code == AppConfig.COLOR_RED_KEY)
-                newBaseColor = Color.RED;
+                newBaseColor = AppConfig.RED;
             else if (code == AppConfig.COLOR_GREEN_KEY)
-                newBaseColor = Color.GREEN;
+                newBaseColor = AppConfig.GREEN;
             else if (code == AppConfig.COLOR_BLUE_KEY)
-                newBaseColor = Color.BLUE;
+                newBaseColor = AppConfig.BLUE;
             else if (code == AppConfig.COLOR_YELLOW_KEY)
-                newBaseColor = Color.YELLOW;
+                newBaseColor = AppConfig.YELLOW;
             else if (code == AppConfig.COLOR_ORANGE_KEY)
-                newBaseColor = Color.ORANGE;
+                newBaseColor = AppConfig.ORANGE;
             else if (code == AppConfig.COLOR_MAGENTA_KEY)
-                newBaseColor = Color.MAGENTA;
+                newBaseColor = AppConfig.MAGENTA;
             else if (code == AppConfig.COLOR_BLACK_KEY)
-                newBaseColor = Color.BLACK;
+                newBaseColor = AppConfig.BLACK;
             else if (code == AppConfig.COLOR_WHITE_KEY)
-                newBaseColor = Color.WHITE;
+                newBaseColor = AppConfig.WHITE;
 
             if (newBaseColor != null) {
                 // Preserve the current opacity

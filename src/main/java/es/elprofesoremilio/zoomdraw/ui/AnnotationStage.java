@@ -2,7 +2,7 @@ package es.elprofesoremilio.zoomdraw.ui;
 
 import es.elprofesoremilio.zoomdraw.commands.*;
 import es.elprofesoremilio.zoomdraw.core.AnnotationManager;
-import es.elprofesoremilio.zoomdraw.core.commands.DrawMode;
+import es.elprofesoremilio.zoomdraw.core.DrawMode;
 import javafx.geometry.Point2D;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
@@ -23,7 +23,6 @@ import java.util.List;
 public class AnnotationStage extends Stage implements BrushSettingsUpdater {
 
     private final AnnotationManager manager;
-    private final AnnotationInputHandler inputHandler;
 
     private final Canvas canvasPermanent;
     private final GraphicsContext gcPermanent;
@@ -67,8 +66,8 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
         Scene scene = new Scene(root, bounds.getWidth(), bounds.getHeight(), Color.TRANSPARENT);
 
         // Instantiate and attach the input handler
-        this.inputHandler = new AnnotationInputHandler(manager, this); // Pass 'this' as BrushSettingsUpdater
-        this.inputHandler.attach(scene);
+        AnnotationInputHandler inputHandler = new AnnotationInputHandler(manager, this); // Pass 'this' as BrushSettingsUpdater
+        inputHandler.attach(scene);
 
         // Key trackers for shapes
         scene.addEventHandler(javafx.scene.input.KeyEvent.KEY_PRESSED, event -> {
@@ -125,7 +124,7 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
                 if (isRPressed) activeShapeMode = DrawMode.FILLED_RECTANGLE;
                 else if (event.isAltDown() && isEPressed) activeShapeMode = DrawMode.FILLED_CIRCLE;
                 else if (isEPressed) activeShapeMode = DrawMode.FILLED_ELLIPSE;
-                else if (isCPressed) {
+                else { // if (isCPressed) { // sobrentendido
                     activeShapeMode = DrawMode.CENSOR_RECTANGLE;
                     javafx.scene.SnapshotParameters params = new javafx.scene.SnapshotParameters();
                     params.setFill(Color.TRANSPARENT);

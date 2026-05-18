@@ -1,14 +1,15 @@
 package es.elprofesoremilio.zoomdraw.core;
 
+import es.elprofesoremilio.zoomdraw.config.AppConfig;
 import javafx.scene.paint.Color;
 
 /**
  * Encapsulates the current settings for the annotation brush.
  */
 public class BrushSettings {
-    private Color currentColor = Color.RED;
-    private double currentLineWidth = 3.0;
-    private double currentOpacity = 1.0;
+    private Color currentColor = AppConfig.DEFAULT_COLOR;
+    private double currentLineWidth = AppConfig.DEFAULT_LINE_WIDTH;
+    private double currentOpacity = AppConfig.DEFAULT_OPACITY;
 
     public Color getCurrentColor() {
         return currentColor;

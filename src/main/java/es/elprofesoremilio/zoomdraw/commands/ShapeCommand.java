@@ -1,6 +1,6 @@
 package es.elprofesoremilio.zoomdraw.commands;
 
-import es.elprofesoremilio.zoomdraw.core.commands.DrawMode;
+import es.elprofesoremilio.zoomdraw.core.DrawMode;
 import javafx.geometry.Point2D;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.WritableImage;

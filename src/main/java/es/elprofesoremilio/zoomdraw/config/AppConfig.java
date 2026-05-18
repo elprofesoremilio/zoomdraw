@@ -62,7 +62,8 @@ public class AppConfig {
     public static final KeyCode LINE_WIDTH_DECREASE_KEY_3 = KeyCode.SUBTRACT;
 
     // Colors
-    public static final Color GREEN = new Color(0,1,0.1,1);
+    public static final Color GREEN = new Color(0,1,0.3,1);
+    public static final Color RED = new Color(1,0,0,1);
     public static final Color BLUE = new Color(0,0.2,1,1);
     public static final Color YELLOW = Color.YELLOW;
     public static final Color ORANGE = new Color(1,0.45,0,1);
@@ -76,6 +77,9 @@ public class AppConfig {
 
     // KeyCode for exit
     public static final KeyCode EXIT_KEY = KeyCode.ESCAPE;
+    public static final Color DEFAULT_COLOR = AppConfig.RED;
+    public static final double DEFAULT_LINE_WIDTH = 3.0;
+    public static final double DEFAULT_OPACITY = 1.0;
 
 
     public static void loadSystemProperties() {

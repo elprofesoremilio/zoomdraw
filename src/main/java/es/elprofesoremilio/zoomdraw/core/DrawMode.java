@@ -1,4 +1,4 @@
-package es.elprofesoremilio.zoomdraw.core.commands;
+package es.elprofesoremilio.zoomdraw.core;
 
 public enum DrawMode {
     PENCIL, LINE, RECTANGLE, CIRCLE, ELLIPSE, ARROW,
