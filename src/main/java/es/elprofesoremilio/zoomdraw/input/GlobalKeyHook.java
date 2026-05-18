@@ -48,8 +48,8 @@ public class GlobalKeyHook implements NativeKeyListener {
             toggleAnnotationModeCommand.execute();
         }
 
-        // ESC (solo si la app está activa)
-        if (keyCode == NativeKeyEvent.VC_ESCAPE && manager.isActive()) {
+        // ESC (solo si la app está activa y no estamos en modo texto)
+        if (keyCode == NativeKeyEvent.VC_ESCAPE && manager.isActive() && !manager.isTextModeActive()) {
             stopAnnotationModeCommand.execute();
         }
     }

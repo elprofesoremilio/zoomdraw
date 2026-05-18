@@ -36,13 +36,21 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
     private DrawMode activeShapeMode = DrawMode.PENCIL;
     private boolean isDrawingShape = false;
     private Point2D shapeStartPoint = null;
-    
+
     private boolean isRPressed = false;
     private boolean isEPressed = false;
     private boolean isFPressed = false;
     private boolean isCPressed = false;
-    
+
     private WritableImage currentCanvasSnapshot = null;
+
+    private boolean isTextModeActive = false;
+    private boolean isTyping = false;
+    private TextCommand currentTextCommand = null;
+
+    public boolean isTextModeActive() {
+        return isTextModeActive;
+    }
 
     public AnnotationStage(AnnotationManager manager, Rectangle2D bounds, WritableImage background) {
         super(StageStyle.TRANSPARENT);
@@ -66,8 +74,76 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
         Scene scene = new Scene(root, bounds.getWidth(), bounds.getHeight(), Color.TRANSPARENT);
 
         // Instantiate and attach the input handler
-        AnnotationInputHandler inputHandler = new AnnotationInputHandler(manager, this); // Pass 'this' as BrushSettingsUpdater
+        AnnotationInputHandler inputHandler = new AnnotationInputHandler(manager, this); // Pass 'this' as
+                                                                                         // BrushSettingsUpdater
         inputHandler.attach(scene);
+
+        scene.addEventFilter(javafx.scene.input.KeyEvent.KEY_PRESSED, event -> {
+            if (event.isControlDown() && event.getCode() == KeyCode.T) {
+                isTextModeActive = !isTextModeActive;
+                if (!isTextModeActive && isTyping) {
+                    finishTextCommand();
+                }
+                if (isTextModeActive) {
+                    scene.setCursor(javafx.scene.Cursor.TEXT);
+                    activeShapeMode = DrawMode.TEXT;
+                } else {
+                    scene.setCursor(javafx.scene.Cursor.DEFAULT);
+                    activeShapeMode = DrawMode.PENCIL;
+                }
+                event.consume();
+                return;
+            }
+
+            if (isTyping) {
+                if (event.getCode() == KeyCode.ESCAPE) {
+                    cancelTextCommand();
+                    event.consume();
+                } else if (event.getCode() == KeyCode.BACK_SPACE) {
+                    currentTextCommand.removeLast();
+                    redrawTextTemporal();
+                    event.consume();
+                } else if (event.getCode() == KeyCode.ENTER) {
+                    currentTextCommand.append(es.elprofesoremilio.zoomdraw.core.text.TextTokens.ENTER_TOKEN,
+                            manager.getCurrentColor(), manager.getCurrentLineWidth());
+                    redrawTextTemporal();
+                    event.consume();
+                } else if (event.getCode() == KeyCode.TAB) {
+                    currentTextCommand.append(es.elprofesoremilio.zoomdraw.core.text.TextTokens.TAB_TOKEN,
+                            manager.getCurrentColor(), manager.getCurrentLineWidth());
+                    redrawTextTemporal();
+                    event.consume();
+                } else if (!event.isControlDown() && !event.isAltDown() && !event.isMetaDown()) {
+                    // Prevenir que otras teclas se procesen como atajos mientras se escribe
+                }
+            } else if (isTextModeActive) {
+                if (event.getCode() == KeyCode.ESCAPE) {
+                    isTextModeActive = false;
+                    activeShapeMode = DrawMode.PENCIL;
+                    scene.setCursor(javafx.scene.Cursor.DEFAULT);
+                    event.consume();
+                } else if (!event.isControlDown() && !event.isAltDown() && !event.isMetaDown()) {
+                    // En modo texto pero sin escribir, consumimos las teclas de colores y formas
+                    // para que no hagan nada
+                    if (event.getCode().isLetterKey() || event.getCode().isDigitKey()) {
+                        event.consume();
+                    }
+                }
+            }
+        });
+
+        scene.addEventFilter(javafx.scene.input.KeyEvent.KEY_TYPED, event -> {
+            if (isTyping) {
+                String character = event.getCharacter();
+                if (character.length() > 0 && character.charAt(0) >= 32 && character.charAt(0) != 127) {
+                    currentTextCommand.append(character, manager.getCurrentColor(), manager.getCurrentLineWidth());
+                    redrawTextTemporal();
+                }
+                event.consume();
+            } else if (isTextModeActive) {
+                event.consume();
+            }
+        });
 
         // Key trackers for shapes
         scene.addEventHandler(javafx.scene.input.KeyEvent.KEY_PRESSED, event -> {
@@ -82,12 +158,20 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
                     return;
                 }
             }
-            switch(event.getCode()) {
-                case R: isRPressed = true; break;
-                case E: isEPressed = true; break;
-                case F: isFPressed = true; break;
-                case C: isCPressed = true; break;
-                case ESCAPE: 
+            switch (event.getCode()) {
+                case R:
+                    isRPressed = true;
+                    break;
+                case E:
+                    isEPressed = true;
+                    break;
+                case F:
+                    isFPressed = true;
+                    break;
+                case C:
+                    isCPressed = true;
+                    break;
+                case ESCAPE:
                     if (isDrawingShape) {
                         isDrawingShape = false;
                         activeShapeMode = DrawMode.PENCIL;
@@ -95,42 +179,78 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
                         event.consume();
                     }
                     break;
-                default: break;
+                default:
+                    break;
             }
         });
 
         scene.addEventHandler(javafx.scene.input.KeyEvent.KEY_RELEASED, event -> {
-            switch(event.getCode()) {
-                case R: isRPressed = false; break;
-                case E: isEPressed = false; break;
-                case F: isFPressed = false; break;
-                case C: isCPressed = false; break;
-                default: break;
+            switch (event.getCode()) {
+                case R:
+                    isRPressed = false;
+                    break;
+                case E:
+                    isEPressed = false;
+                    break;
+                case F:
+                    isFPressed = false;
+                    break;
+                case C:
+                    isCPressed = false;
+                    break;
+                default:
+                    break;
             }
         });
 
         // Mouse events for drawing
         scene.setOnMousePressed(event -> {
+            if (isTextModeActive) {
+                if (isTyping) {
+                    finishTextCommand();
+                    isTextModeActive = false;
+                    activeShapeMode = DrawMode.PENCIL;
+                    this.getScene().setCursor(javafx.scene.Cursor.DEFAULT);
+                    return; // Do not trigger other tools and do not start a new text block
+                }
+                if (event.getButton() == javafx.scene.input.MouseButton.PRIMARY) {
+                    isTyping = true;
+                    currentTextCommand = new TextCommand(new Point2D(event.getX(), event.getY()),
+                            manager.getCurrentColor(), manager.getCurrentLineWidth());
+                    scene.setCursor(javafx.scene.Cursor.NONE);
+                    redrawTextTemporal();
+                }
+                return; // Do not trigger other tools
+            }
+
             if (event.isControlDown()) {
-                if (isRPressed) activeShapeMode = DrawMode.RECTANGLE;
-                else if (event.isAltDown() && isEPressed) activeShapeMode = DrawMode.CIRCLE;
-                else if (isEPressed) activeShapeMode = DrawMode.ELLIPSE;
-                else if (isFPressed) activeShapeMode = DrawMode.ARROW;
-                else activeShapeMode = DrawMode.LINE;
-                
+                if (isRPressed)
+                    activeShapeMode = DrawMode.RECTANGLE;
+                else if (event.isAltDown() && isEPressed)
+                    activeShapeMode = DrawMode.CIRCLE;
+                else if (isEPressed)
+                    activeShapeMode = DrawMode.ELLIPSE;
+                else if (isFPressed)
+                    activeShapeMode = DrawMode.ARROW;
+                else
+                    activeShapeMode = DrawMode.LINE;
+
                 isDrawingShape = true;
                 shapeStartPoint = new Point2D(event.getX(), event.getY());
             } else if (event.isShiftDown() && (isRPressed || isEPressed || isCPressed)) {
-                if (isRPressed) activeShapeMode = DrawMode.FILLED_RECTANGLE;
-                else if (event.isAltDown() && isEPressed) activeShapeMode = DrawMode.FILLED_CIRCLE;
-                else if (isEPressed) activeShapeMode = DrawMode.FILLED_ELLIPSE;
+                if (isRPressed)
+                    activeShapeMode = DrawMode.FILLED_RECTANGLE;
+                else if (event.isAltDown() && isEPressed)
+                    activeShapeMode = DrawMode.FILLED_CIRCLE;
+                else if (isEPressed)
+                    activeShapeMode = DrawMode.FILLED_ELLIPSE;
                 else { // if (isCPressed) { // sobrentendido
                     activeShapeMode = DrawMode.CENSOR_RECTANGLE;
                     javafx.scene.SnapshotParameters params = new javafx.scene.SnapshotParameters();
                     params.setFill(Color.TRANSPARENT);
                     currentCanvasSnapshot = canvasPermanent.snapshot(params, null);
                 }
-                
+
                 isDrawingShape = true;
                 shapeStartPoint = new Point2D(event.getX(), event.getY());
             } else {
@@ -144,13 +264,15 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
         scene.setOnMouseDragged(event -> {
             if (isDrawingShape && activeShapeMode != DrawMode.PENCIL) {
                 gcTemporal.clearRect(0, 0, canvasTemporal.getWidth(), canvasTemporal.getHeight());
-                ShapeCommand previewShape = new ShapeCommand(shapeStartPoint, new Point2D(event.getX(), event.getY()), 
-                        activeShapeMode, manager.getCurrentColor(), manager.getCurrentLineWidth(), currentCanvasSnapshot);
+                ShapeCommand previewShape = new ShapeCommand(shapeStartPoint, new Point2D(event.getX(), event.getY()),
+                        activeShapeMode, manager.getCurrentColor(), manager.getCurrentLineWidth(),
+                        currentCanvasSnapshot);
                 previewShape.execute(gcTemporal);
             } else if (activeShapeMode == DrawMode.PENCIL) {
                 currentStrokePoints.add(new Point2D(event.getX(), event.getY()));
                 gcTemporal.clearRect(0, 0, canvasTemporal.getWidth(), canvasTemporal.getHeight());
-                PathCommand previewPath = new PathCommand(currentStrokePoints, manager.getCurrentColor(), manager.getCurrentLineWidth());
+                PathCommand previewPath = new PathCommand(currentStrokePoints, manager.getCurrentColor(),
+                        manager.getCurrentLineWidth());
                 previewPath.execute(gcTemporal);
             }
         });
@@ -158,8 +280,9 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
         scene.setOnMouseReleased(event -> {
             if (isDrawingShape && activeShapeMode != DrawMode.PENCIL) {
                 gcTemporal.clearRect(0, 0, canvasTemporal.getWidth(), canvasTemporal.getHeight());
-                ShapeCommand finalShape = new ShapeCommand(shapeStartPoint, new Point2D(event.getX(), event.getY()), 
-                        activeShapeMode, manager.getCurrentColor(), manager.getCurrentLineWidth(), currentCanvasSnapshot);
+                ShapeCommand finalShape = new ShapeCommand(shapeStartPoint, new Point2D(event.getX(), event.getY()),
+                        activeShapeMode, manager.getCurrentColor(), manager.getCurrentLineWidth(),
+                        currentCanvasSnapshot);
                 commandHistory.execute(finalShape, gcPermanent);
                 redrawAll();
                 isDrawingShape = false;
@@ -168,7 +291,8 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
             } else if (activeShapeMode == DrawMode.PENCIL) {
                 gcTemporal.clearRect(0, 0, canvasTemporal.getWidth(), canvasTemporal.getHeight());
                 if (currentStrokePoints.size() >= 2) {
-                    PathCommand finalPath = new PathCommand(currentStrokePoints, manager.getCurrentColor(), manager.getCurrentLineWidth());
+                    PathCommand finalPath = new PathCommand(currentStrokePoints, manager.getCurrentColor(),
+                            manager.getCurrentLineWidth());
                     commandHistory.execute(finalPath, gcPermanent);
                     redrawAll();
                 }
@@ -220,5 +344,34 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
             cmd.execute(gcPermanent);
         }
         updateBrushSettings();
+    }
+
+    private void finishTextCommand() {
+        if (currentTextCommand != null) {
+            currentTextCommand.setShowCursor(false);
+            if (!currentTextCommand.isEmpty()) {
+                commandHistory.execute(currentTextCommand, gcPermanent);
+                redrawAll();
+            }
+            currentTextCommand = null;
+        }
+        isTyping = false;
+        this.getScene().setCursor(javafx.scene.Cursor.TEXT);
+        gcTemporal.clearRect(0, 0, canvasTemporal.getWidth(), canvasTemporal.getHeight());
+    }
+
+    private void cancelTextCommand() {
+        currentTextCommand = null;
+        isTyping = false;
+        isTextModeActive = false;
+        this.getScene().setCursor(javafx.scene.Cursor.DEFAULT);
+        gcTemporal.clearRect(0, 0, canvasTemporal.getWidth(), canvasTemporal.getHeight());
+    }
+
+    private void redrawTextTemporal() {
+        gcTemporal.clearRect(0, 0, canvasTemporal.getWidth(), canvasTemporal.getHeight());
+        if (currentTextCommand != null) {
+            currentTextCommand.execute(gcTemporal);
+        }
     }
 }

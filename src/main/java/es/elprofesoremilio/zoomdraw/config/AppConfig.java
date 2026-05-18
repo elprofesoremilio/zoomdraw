@@ -42,6 +42,9 @@ public class AppConfig {
     public static final double GLOBAL_OPACITY_STEP = 0.1;
     public static final double GLOBAL_OPACITY_MIN = 0.1;
     public static final double GLOBAL_OPACITY_MAX = 1.0;
+    
+    // Text Tool
+    public static final double TEXT_SIZE_MULTIPLIER = 10.0;
 
     // KeyCodes for colors
     public static final KeyCode COLOR_RED_KEY = KeyCode.R;

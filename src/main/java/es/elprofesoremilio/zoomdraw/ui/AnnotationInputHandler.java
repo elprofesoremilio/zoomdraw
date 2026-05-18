@@ -65,6 +65,10 @@ public class AnnotationInputHandler {
     }
 
     private void handleKeyPressed(javafx.scene.input.KeyEvent event) {
+        if (brushSettingsUpdater instanceof AnnotationStage && ((AnnotationStage) brushSettingsUpdater).isTextModeActive()) {
+            return;
+        }
+
         KeyCode code = event.getCode();
         boolean isShift = event.isShiftDown();
 
@@ -76,7 +80,7 @@ public class AnnotationInputHandler {
         }
 
         // --- COLOR LOGIC ---
-        if (!event.isControlDown() && !event.isAltDown()) {
+        if (!event.isControlDown() && !event.isAltDown() && !event.isShiftDown() && !event.isMetaDown()) {
             Color newBaseColor = null;
             if (code == AppConfig.COLOR_RED_KEY)
                 newBaseColor = AppConfig.RED;

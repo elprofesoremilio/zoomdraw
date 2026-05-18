@@ -103,6 +103,10 @@ public class AnnotationManager {
         return active;
     }
 
+    public boolean isTextModeActive() {
+        return currentStage != null && currentStage.isTextModeActive();
+    }
+
     public boolean isStageFocused() {
         return currentStage != null && currentStage.isFocused();
     }
