@@ -14,11 +14,11 @@ import javafx.scene.paint.Color;
 public class AnnotationInputHandler {
 
     private final AnnotationManager manager;
-    private final DrawingCanvas drawingCanvas;
+    private final BrushSettingsUpdater brushSettingsUpdater;
 
-    public AnnotationInputHandler(AnnotationManager manager, DrawingCanvas drawingCanvas) {
+    public AnnotationInputHandler(AnnotationManager manager, BrushSettingsUpdater brushSettingsUpdater) {
         this.manager = manager;
-        this.drawingCanvas = drawingCanvas;
+        this.brushSettingsUpdater = brushSettingsUpdater;
     }
 
     public void attach(Scene scene) {
@@ -37,7 +37,7 @@ public class AnnotationInputHandler {
                 newWidth = Math.max(AppConfig.LINE_WIDTH_MIN, newWidth - AppConfig.LINE_WIDTH_SCROLL_STEP);
             }
             manager.setCurrentLineWidth(newWidth);
-            drawingCanvas.updateBrushSettings();
+            brushSettingsUpdater.updateBrushSettings();
             event.consume();
         }
     }
@@ -56,13 +56,13 @@ public class AnnotationInputHandler {
         // --- COLOR LOGIC ---
         Color newBaseColor = null;
         if (code == AppConfig.COLOR_RED_KEY) newBaseColor = Color.RED;
-        else if (code == AppConfig.COLOR_GREEN_KEY) newBaseColor = AppConfig.GREEN;
-        else if (code == AppConfig.COLOR_BLUE_KEY) newBaseColor = AppConfig.BLUE;
-        else if (code == AppConfig.COLOR_YELLOW_KEY) newBaseColor = AppConfig.YELLOW;
-        else if (code == AppConfig.COLOR_ORANGE_KEY) newBaseColor = AppConfig.ORANGE;
-        else if (code == AppConfig.COLOR_MAGENTA_KEY) newBaseColor = AppConfig.MAGENTA;
-        else if (code == AppConfig.COLOR_BLACK_KEY) newBaseColor = AppConfig.BLACK;
-        else if (code == AppConfig.COLOR_WHITE_KEY) newBaseColor = AppConfig.WHITE;
+        else if (code == AppConfig.COLOR_GREEN_KEY) newBaseColor = Color.GREEN;
+        else if (code == AppConfig.COLOR_BLUE_KEY) newBaseColor = Color.BLUE;
+        else if (code == AppConfig.COLOR_YELLOW_KEY) newBaseColor = Color.YELLOW;
+        else if (code == AppConfig.COLOR_ORANGE_KEY) newBaseColor = Color.ORANGE;
+        else if (code == AppConfig.COLOR_MAGENTA_KEY) newBaseColor = Color.MAGENTA;
+        else if (code == AppConfig.COLOR_BLACK_KEY) newBaseColor = Color.BLACK;
+        else if (code == AppConfig.COLOR_WHITE_KEY) newBaseColor = Color.WHITE;
 
 
         if (newBaseColor != null) {
@@ -71,7 +71,7 @@ public class AnnotationInputHandler {
             Color finalColor = new Color(newBaseColor.getRed(), newBaseColor.getGreen(), newBaseColor.getBlue(), alpha);
 
             manager.setCurrentColor(finalColor);
-            drawingCanvas.updateBrushSettings();
+            brushSettingsUpdater.updateBrushSettings();
             event.consume();
             return;
         }
@@ -80,13 +80,13 @@ public class AnnotationInputHandler {
         if (code == AppConfig.LINE_WIDTH_INCREASE_KEY_1 || code == AppConfig.LINE_WIDTH_INCREASE_KEY_2 || code == AppConfig.LINE_WIDTH_INCREASE_KEY_3) {
             double newWidth = Math.min(AppConfig.LINE_WIDTH_MAX, manager.getCurrentLineWidth() + AppConfig.LINE_WIDTH_SCROLL_STEP);
             manager.setCurrentLineWidth(newWidth);
-            drawingCanvas.updateBrushSettings();
+            brushSettingsUpdater.updateBrushSettings();
             event.consume();
         }
         else if (code == AppConfig.LINE_WIDTH_DECREASE_KEY_1 || code == AppConfig.LINE_WIDTH_DECREASE_KEY_2 || code == AppConfig.LINE_WIDTH_DECREASE_KEY_3) {
             double newWidth = Math.max(AppConfig.LINE_WIDTH_MIN, manager.getCurrentLineWidth() - AppConfig.LINE_WIDTH_SCROLL_STEP);
             manager.setCurrentLineWidth(newWidth);
-            drawingCanvas.updateBrushSettings();
+            brushSettingsUpdater.updateBrushSettings();
             event.consume();
         }
 
@@ -97,7 +97,7 @@ public class AnnotationInputHandler {
             double newAlpha = Math.max(AppConfig.GLOBAL_OPACITY_MIN, current.getOpacity() - AppConfig.GLOBAL_OPACITY_STEP);
             Color updatedColor = new Color(current.getRed(), current.getGreen(), current.getBlue(), newAlpha);
             manager.setCurrentColor(updatedColor);
-            drawingCanvas.updateBrushSettings();
+            brushSettingsUpdater.updateBrushSettings();
             event.consume();
         }
         else if (code == AppConfig.GLOBAL_OPACITY_INCREASE_KEY) {
@@ -106,7 +106,7 @@ public class AnnotationInputHandler {
             double newAlpha = Math.min(AppConfig.GLOBAL_OPACITY_MAX, current.getOpacity() + AppConfig.GLOBAL_OPACITY_STEP);
             Color updatedColor = new Color(current.getRed(), current.getGreen(), current.getBlue(), newAlpha);
             manager.setCurrentColor(updatedColor);
-            drawingCanvas.updateBrushSettings();
+            brushSettingsUpdater.updateBrushSettings();
             event.consume();
         }
     }
