@@ -8,7 +8,7 @@ import javafx.scene.paint.Color;
 public class BrushSettings {
     private Color currentColor = Color.RED;
     private double currentLineWidth = 3.0;
-    private final double defaultSemiTransparentOpacity = 0.4; // 40% de opacidad para el modo sobresubrayado
+    private double currentOpacity = 0.2; // 20% de opacidad para el modo sobresubrayado
 
     public Color getCurrentColor() {
         return currentColor;
@@ -26,7 +26,11 @@ public class BrushSettings {
         this.currentLineWidth = currentLineWidth;
     }
 
-    public double getDefaultSemiTransparentOpacity() {
-        return defaultSemiTransparentOpacity;
+    public double getCurrentOpacity() {
+        return currentOpacity;
+    }
+
+    public void setCurrentOpacity(double currentOpacity) {
+        this.currentOpacity = currentOpacity;
     }
 }

@@ -19,12 +19,29 @@ public class AnnotationManager {
         this.brushSettings = new BrushSettings();
     }
 
-    public double getDefaultSemiTransparentOpacity() { return brushSettings.getDefaultSemiTransparentOpacity(); }
-    public javafx.scene.paint.Color getCurrentColor() { return brushSettings.getCurrentColor(); }
-    public void setCurrentColor(javafx.scene.paint.Color color) { this.brushSettings.setCurrentColor(color); }
+    public double getCurrentOpacity() {
+        return brushSettings.getCurrentOpacity();
+    }
 
-    public double getCurrentLineWidth() { return brushSettings.getCurrentLineWidth(); }
-    public void setCurrentLineWidth(double width) { this.brushSettings.setCurrentLineWidth(width); }
+    public void setCurrentOpacity(double opacity) {
+        brushSettings.setCurrentOpacity(opacity);
+    }
+
+    public javafx.scene.paint.Color getCurrentColor() {
+        return brushSettings.getCurrentColor();
+    }
+
+    public void setCurrentColor(javafx.scene.paint.Color color) {
+        this.brushSettings.setCurrentColor(color);
+    }
+
+    public double getCurrentLineWidth() {
+        return brushSettings.getCurrentLineWidth();
+    }
+
+    public void setCurrentLineWidth(double width) {
+        this.brushSettings.setCurrentLineWidth(width);
+    }
 
     public void toggleAnnotationMode() {
         // Forzamos que todo el cambio de estado ocurra en el hilo de JavaFX
@@ -38,7 +55,8 @@ public class AnnotationManager {
     }
 
     public void startAnnotationMode() {
-        if (active) return;
+        if (active)
+            return;
 
         System.out.println("Starting annotation mode");
 
