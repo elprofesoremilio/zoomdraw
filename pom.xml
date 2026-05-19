@@ -52,7 +52,6 @@
 
     <build>
         <plugins>
-            <!-- Compilador Java 21 -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -62,12 +61,6 @@
                 </configuration>
             </plugin>
 
-            <!--
-                Plugin JavaFX para desarrollo: mvn javafx:run
-                enable-native-access elimina los WARNING de métodos restringidos
-                que lanzan javafx.graphics y jnativehook al cargar sus bibliotecas
-                nativas con System.load / System.loadLibrary.
-            -->
             <plugin>
                 <groupId>org.openjfx</groupId>
                 <artifactId>javafx-maven-plugin</artifactId>
@@ -75,27 +68,15 @@
                 <configuration>
                     <mainClass>${mainClass}</mainClass>
                     <options>
-                        <!-- Acceso a internos de la JVM que necesita JNativeHook -->
                         <option>--add-opens=java.base/java.lang=ALL-UNNAMED</option>
                         <option>--add-opens=java.desktop/sun.awt=ALL-UNNAMED</option>
 
-                        <!--
-                            Permite a javafx.graphics y a jnativehook cargar
-                            sus librerías nativas sin WARNING ni bloqueo futuro.
-                            Sin esto Java 21+ lanza:
-                              "Restricted methods will be blocked in a future release"
-                        -->
                         <option>--enable-native-access=javafx.graphics</option>
                         <option>--enable-native-access=com.github.kwhat.jnativehook</option>
                     </options>
                 </configuration>
             </plugin>
 
-            <!--
-                Fat-JAR ejecutable: mvn package → target/zoomdraw-1.0-SNAPSHOT-fat.jar
-                Uso: java -jar target/zoomdraw-1.0-SNAPSHOT-fat.jar
-                     (requiere JavaFX en el module-path si no está en el JDK)
-            -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
@@ -109,11 +90,10 @@
                             <shadedClassifierName>fat</shadedClassifierName>
                             <transformers>
                                 <transformer implementation=
-                                    "org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                                     "org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <mainClass>${mainClass}</mainClass>
                                 </transformer>
                             </transformers>
-                            <!-- Excluye firmas que rompen el fat-jar -->
                             <filters>
                                 <filter>
                                     <artifact>*:*</artifact>
@@ -124,6 +104,47 @@
                                     </excludes>
                                 </filter>
                             </filters>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.panteleyev</groupId>
+                <artifactId>jpackage-maven-plugin</artifactId>
+                <version>1.6.0</version>
+                <executions>
+                    <execution>
+                        <id>jpackage</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>jpackage</goal>
+                        </goals>
+                        <configuration>
+                            <name>ZoomDraw</name>
+                            <vendor>El Profesor Emilio</vendor>
+                            <appVersion>0.6.0</appVersion>
+                            <mainClass>${mainClass}</mainClass>
+                            <destination>${project.build.directory}/dist</destination>
+
+                            <input>${project.build.directory}</input>
+                            <mainJar>ZoomDraw-${project.version}-fat.jar</mainJar>
+
+                            <type>DEB</type>
+
+                            <javaOptions>
+                                <option>--add-opens=java.base/java.lang=ALL-UNNAMED</option>
+                                <option>--add-opens=java.desktop/sun.awt=ALL-UNNAMED</option>
+                                <option>--enable-native-access=javafx.graphics</option>
+                                <option>--enable-native-access=com.github.kwhat.jnativehook</option>
+                            </javaOptions>
+
+                            <linuxShortcut>true</linuxShortcut>
+                            <linuxMenuGroup>Utility</linuxMenuGroup>
+                            <linuxDebMaintainer>emilio@elprofesoremilio.es</linuxDebMaintainer>
+
+                            <winShortcut>true</winShortcut>
+                            <winMenu>true</winMenu>
                         </configuration>
                     </execution>
                 </executions>

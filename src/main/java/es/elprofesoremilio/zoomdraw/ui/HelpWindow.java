@@ -32,29 +32,29 @@ public class HelpWindow extends Stage {
         
         Label shortcuts = new Label(
             "Dibujo y Herramientas:\n" +
-            "Click Izquierdo: Dibujar trazo libre / texto\n" +
-            "CTRL + Z: Deshacer\n" +
-            "CTRL + Y: Rehacer\n" +
-            "E (sin modificadores): Borrar todos los trazos\n" +
-            "CTRL + T: Modo Texto\n" +
-            "ESC: Cancelar forma / salir de texto / salir de aplicación\n\n" +
+            "\tClick Izquierdo: Dibujar trazo libre / texto\n" +
+            "\tCTRL + Z: Deshacer\n" +
+            "\tCTRL + Y: Rehacer\n" +
+            "\tE: Borrar todos los trazos\n" +
+            "\tT: Modo Texto\n" +
+            "\tESC: Cancelar forma / salir de texto / salir de aplicación\n\n" +
             "Formas Geométricas (Mantener presionado y arrastrar):\n" +
-            "CTRL + R: Rectángulo\n" +
-            "CTRL + E: Elipse\n" +
-            "CTRL + ALT + E: Círculo\n" +
-            "CTRL + F: Flecha\n" +
-            "CTRL + (Nada): Línea\n" +
-            "SHIFT + R / E / ALT+E: Formas rellenas\n" +
-            "SHIFT + C: Modo Censura (Pixelado)\n\n" +
+            "\tCTRL + R: Rectángulo\n" +
+            "\tCTRL + E: Elipse\n" +
+            "\tCTRL + ALT + E: Círculo\n" +
+            "\tCTRL + F: Flecha\n" +
+            "\tCTRL: Línea\n" +
+            "\tSHIFT + R / E / ALT+E: Formas rellenas\n" +
+            "\tSHIFT + C: Modo Censura (Pixelado)\n\n" +
             "Color y Grosor:\n" +
-            "R: Rojo | G: Verde | B: Azul | Y: Amarillo\n" +
-            "O: Naranja | P: Magenta | K: Negro | W: Blanco\n" +
-            "Flecha Arriba / Abajo (o + / -): Cambiar grosor del trazo\n\n" +
+            "\tR: Rojo | G: Verde | B: Azul | Y: Amarillo\nL: Gris claro | D: Gris oscuro\n" +
+            "\tC: Cyan | O: Naranja | P: Rosa | M: Magenta | K: Negro | W: Blanco\n" +
+            "\tFlecha Arriba / Abajo (o + / -): Cambiar grosor del trazo\n\n" +
             "Opacidad y Fondo:\n" +
-            "Flecha Izq / Der: Cambiar opacidad del trazo (10%)\n" +
-            "SHIFT + 1-9, 0: Establecer opacidad absoluta (10% - 100%)\n" +
-            "CTRL + K: Alternar fondo negro\n" +
-            "CTRL + W: Alternar fondo blanco\n" +
+            "\tFlecha Izq / Der: Cambiar opacidad del trazo (10%)\n" +
+            "\tSHIFT + 1-9, 0: Establecer opacidad absoluta (10% - 100%)\n" +
+            "\tCTRL + K: Alternar fondo negro\n" +
+            "\tCTRL + W: Alternar fondo blanco\n\n" +
             "CTRL + 0: Mostrar/Ocultar esta ayuda"
         );
         shortcuts.setFont(Font.font("System", 14));

@@ -81,7 +81,7 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
         inputHandler.attach(scene);
 
         scene.addEventFilter(javafx.scene.input.KeyEvent.KEY_PRESSED, event -> {
-            if (event.isControlDown() && event.getCode() == KeyCode.T) {
+            if (event.getCode() == KeyCode.T) {
                 isTextModeActive = !isTextModeActive;
                 if (!isTextModeActive && isTyping) {
                     finishTextCommand();

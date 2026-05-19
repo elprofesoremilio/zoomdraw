@@ -98,6 +98,15 @@ public class AnnotationInputHandler {
                 newBaseColor = AppConfig.BLACK;
             else if (code == AppConfig.COLOR_WHITE_KEY)
                 newBaseColor = AppConfig.WHITE;
+            else if (code == AppConfig.COLOR_CYAN_KEY)
+                newBaseColor = AppConfig.CYAN;
+            else if (code == AppConfig.COLOR_PINK_KEY)
+                newBaseColor = AppConfig.PINK;
+            else if (code == AppConfig.COLOR_GREY_KEY)
+                newBaseColor = AppConfig.GREY;
+            else if (code == AppConfig.COLOR_DARK_GREY_KEY)
+                newBaseColor = AppConfig.DARK_GREY;
+
 
             if (newBaseColor != null) {
                 // Preserve the current opacity

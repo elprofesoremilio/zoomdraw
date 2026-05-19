@@ -57,9 +57,13 @@ public class AppConfig {
     public static final KeyCode COLOR_BLUE_KEY = KeyCode.B;
     public static final KeyCode COLOR_YELLOW_KEY = KeyCode.Y;
     public static final KeyCode COLOR_ORANGE_KEY = KeyCode.O;
-    public static final KeyCode COLOR_MAGENTA_KEY = KeyCode.P; // Pink/Purple
+    public static final KeyCode COLOR_MAGENTA_KEY = KeyCode.M;
     public static final KeyCode COLOR_BLACK_KEY = KeyCode.K;
     public static final KeyCode COLOR_WHITE_KEY = KeyCode.W;
+    public static final KeyCode COLOR_CYAN_KEY = KeyCode.C;
+    public static final KeyCode COLOR_PINK_KEY = KeyCode.P;
+    public static final KeyCode COLOR_GREY_KEY = KeyCode.L;
+    public static final KeyCode COLOR_DARK_GREY_KEY = KeyCode.D;
 
     // KeyCodes for line width
     public static final KeyCode LINE_WIDTH_INCREASE_KEY_1 = KeyCode.UP;
@@ -70,14 +74,18 @@ public class AppConfig {
     public static final KeyCode LINE_WIDTH_DECREASE_KEY_3 = KeyCode.SUBTRACT;
 
     // Colors
-    public static final Color GREEN = new Color(0,1,0.3,1);
+    public static final Color GREEN = new Color(0,1,0.2,1);
     public static final Color RED = new Color(1,0,0,1);
-    public static final Color BLUE = new Color(0,0.2,1,1);
-    public static final Color YELLOW = Color.YELLOW;
+    public static final Color BLUE = new Color(0.1,0.4,1,1);
+    public static final Color YELLOW = new Color(1,1,0,1);
     public static final Color ORANGE = new Color(1,0.45,0,1);
-    public static final Color MAGENTA = Color.MAGENTA;
-    public static final Color BLACK = Color.BLACK;
-    public static final Color WHITE = Color.WHITE;
+    public static final Color PINK = new Color(1,0.6,1,1);
+    public static final Color CYAN = new Color(0,0.8,1,1);
+    public static final Color MAGENTA = new Color(1,0,1,1);
+    public static final Color GREY = new Color(0.7,0.7,0.7,1);
+    public static final Color DARK_GREY = new Color(0.4,0.4,0.4,1);
+    public static final Color BLACK = new Color(0,0,0,1);
+    public static final Color WHITE = new Color(1,1,1,1);
 
     // KeyCodes for global opacity
     public static final KeyCode GLOBAL_OPACITY_DECREASE_KEY = KeyCode.LEFT;
