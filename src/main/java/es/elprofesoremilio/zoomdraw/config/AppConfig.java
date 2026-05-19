@@ -46,6 +46,11 @@ public class AppConfig {
     // Text Tool
     public static final double TEXT_SIZE_MULTIPLIER = 10.0;
 
+    // Help Window
+    public static final double HELP_WINDOW_OPACITY_MIN = 0.2;
+    public static final double HELP_WINDOW_OPACITY_MAX = 1.0;
+    public static final double HELP_WINDOW_OPACITY_DEFAULT = 0.7;
+
     // KeyCodes for colors
     public static final KeyCode COLOR_RED_KEY = KeyCode.R;
     public static final KeyCode COLOR_GREEN_KEY = KeyCode.G;

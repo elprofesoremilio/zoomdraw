@@ -48,6 +48,11 @@ public class GlobalKeyHook implements NativeKeyListener {
             toggleAnnotationModeCommand.execute();
         }
 
+        // CTRL + 0
+        if (ctrlDown && keyCode == NativeKeyEvent.VC_0) {
+            manager.toggleHelpWindow();
+        }
+
         // ESC (solo si la app está activa y no estamos en modo texto)
         if (keyCode == NativeKeyEvent.VC_ESCAPE && manager.isActive() && !manager.isTextModeActive()) {
             stopAnnotationModeCommand.execute();

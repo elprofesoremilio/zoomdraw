@@ -1,6 +1,7 @@
 package es.elprofesoremilio.zoomdraw.core;
 
 import es.elprofesoremilio.zoomdraw.ui.AnnotationStage;
+import es.elprofesoremilio.zoomdraw.ui.HelpWindow;
 import es.elprofesoremilio.zoomdraw.utils.ScreenUtils;
 import javafx.application.Platform;
 import javafx.geometry.Rectangle2D;
@@ -12,6 +13,7 @@ import javafx.scene.image.WritableImage;
 public class AnnotationManager {
 
     private AnnotationStage currentStage = null;
+    private HelpWindow helpWindow = null;
     private volatile boolean active = false;
     private final BrushSettings brushSettings; // Use the new BrushSettings class
 
@@ -41,6 +43,42 @@ public class AnnotationManager {
 
     public void setCurrentLineWidth(double width) {
         this.brushSettings.setCurrentLineWidth(width);
+    }
+
+    public void toggleHelpWindow() {
+        Platform.runLater(() -> {
+            if (helpWindow == null) {
+                helpWindow = new HelpWindow();
+            }
+            if (helpWindow.isShowing()) {
+                helpWindow.hide();
+            } else {
+                helpWindow.show();
+                
+                Rectangle2D targetBounds;
+                if (active && currentStage != null) {
+                    targetBounds = new Rectangle2D(currentStage.getX(), currentStage.getY(), currentStage.getWidth(), currentStage.getHeight());
+                } else {
+                    targetBounds = ScreenUtils.getScreenBoundsAtCursor();
+                }
+                
+                double padding = 30.0; // Un poquito separado del borde
+                double x = targetBounds.getMaxX() - helpWindow.getWidth() - padding;
+                double y = targetBounds.getMinY() + padding;
+                
+                helpWindow.setX(x);
+                helpWindow.setY(y);
+                helpWindow.toFront();
+            }
+        });
+    }
+
+    public void bringHelpWindowToFront() {
+        Platform.runLater(() -> {
+            if (helpWindow != null && helpWindow.isShowing()) {
+                helpWindow.toFront();
+            }
+        });
     }
 
     public void toggleAnnotationMode() {
@@ -84,6 +122,7 @@ public class AnnotationManager {
                 currentStage.toFront();
                 triggerFocusHammer();
                 active = true;
+                bringHelpWindowToFront();
             });
 
         } catch (Exception e) {
@@ -122,6 +161,7 @@ public class AnnotationManager {
                         currentStage.toFront();
                         currentStage.requestFocus();
                     }
+                    bringHelpWindowToFront();
                 });
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();

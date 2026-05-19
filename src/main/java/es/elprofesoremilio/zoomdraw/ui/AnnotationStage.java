@@ -48,6 +48,8 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
     private boolean isTyping = false;
     private TextCommand currentTextCommand = null;
 
+    private Color backgroundColorOverride = null;
+
     public boolean isTextModeActive() {
         return isTextModeActive;
     }
@@ -156,6 +158,16 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
                     commandHistory.redo(this::redrawAll);
                     event.consume();
                     return;
+                } else if (event.getCode() == KeyCode.K) {
+                    backgroundColorOverride = (backgroundColorOverride == Color.BLACK) ? null : Color.BLACK;
+                    redrawAll();
+                    event.consume();
+                    return;
+                } else if (event.getCode() == KeyCode.W) {
+                    backgroundColorOverride = (backgroundColorOverride == Color.WHITE) ? null : Color.WHITE;
+                    redrawAll();
+                    event.consume();
+                    return;
                 }
             }
             switch (event.getCode()) {
@@ -164,6 +176,10 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
                     break;
                 case E:
                     isEPressed = true;
+                    if (!event.isControlDown() && !event.isAltDown() && !event.isShiftDown() && !event.isMetaDown()) {
+                        commandHistory.execute(new ClearCommand(this::drawCurrentBackground), gcPermanent);
+                        redrawAll();
+                    }
                     break;
                 case F:
                     isFPressed = true;
@@ -205,6 +221,11 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
 
         // Mouse events for drawing
         scene.setOnMousePressed(event -> {
+            if (!this.isFocused()) {
+                this.requestFocus();
+            }
+            manager.bringHelpWindowToFront();
+
             if (isTextModeActive) {
                 if (isTyping) {
                     finishTextCommand();
@@ -303,7 +324,6 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
         // Recuperar foco al clic
         scene.setOnMouseClicked(event -> {
             if (!this.isFocused()) {
-                this.toFront();
                 this.requestFocus();
             }
         });
@@ -337,9 +357,18 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
         gcTemporal.setLineJoin(StrokeLineJoin.ROUND);
     }
 
+    private void drawCurrentBackground() {
+        if (backgroundColorOverride != null) {
+            gcPermanent.setFill(backgroundColorOverride);
+            gcPermanent.fillRect(0, 0, canvasPermanent.getWidth(), canvasPermanent.getHeight());
+        } else {
+            gcPermanent.drawImage(background, 0, 0);
+        }
+    }
+
     private void redrawAll() {
         gcPermanent.clearRect(0, 0, canvasPermanent.getWidth(), canvasPermanent.getHeight());
-        gcPermanent.drawImage(background, 0, 0);
+        drawCurrentBackground();
         for (DrawingCommand cmd : commandHistory.getHistory()) {
             cmd.execute(gcPermanent);
         }
