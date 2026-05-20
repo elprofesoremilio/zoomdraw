@@ -68,11 +68,7 @@
                 <configuration>
                     <mainClass>${mainClass}</mainClass>
                     <options>
-                        <option>--add-opens=java.base/java.lang=ALL-UNNAMED</option>
-                        <option>--add-opens=java.desktop/sun.awt=ALL-UNNAMED</option>
-
-                        <option>--enable-native-access=javafx.graphics</option>
-                        <option>--enable-native-access=com.github.kwhat.jnativehook</option>
+                        <option>--enable-native-access=ALL-UNNAMED</option>
                     </options>
                 </configuration>
             </plugin>
@@ -89,8 +85,7 @@
                             <shadedArtifactAttached>true</shadedArtifactAttached>
                             <shadedClassifierName>fat</shadedClassifierName>
                             <transformers>
-                                <transformer implementation=
-                                                     "org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <mainClass>${mainClass}</mainClass>
                                 </transformer>
                             </transformers>
@@ -101,7 +96,7 @@
                                         <exclude>META-INF/*.SF</exclude>
                                         <exclude>META-INF/*.DSA</exclude>
                                         <exclude>META-INF/*.RSA</exclude>
-                                    </excludes>
+                                        <exclude>module-info.class</exclude> </excludes>
                                 </filter>
                             </filters>
                         </configuration>
@@ -124,19 +119,16 @@
                             <name>ZoomDraw</name>
                             <vendor>El Profesor Emilio</vendor>
                             <appVersion>0.6.0</appVersion>
-                            <mainClass>${mainClass}</mainClass>
                             <destination>${project.build.directory}/dist</destination>
 
                             <input>${project.build.directory}</input>
                             <mainJar>ZoomDraw-${project.version}-fat.jar</mainJar>
+                            <mainClass>${mainClass}</mainClass>
 
                             <type>DEB</type>
 
                             <javaOptions>
-                                <option>--add-opens=java.base/java.lang=ALL-UNNAMED</option>
-                                <option>--add-opens=java.desktop/sun.awt=ALL-UNNAMED</option>
-                                <option>--enable-native-access=javafx.graphics</option>
-                                <option>--enable-native-access=com.github.kwhat.jnativehook</option>
+                                <option>--enable-native-access=ALL-UNNAMED</option>
                             </javaOptions>
 
                             <linuxShortcut>true</linuxShortcut>

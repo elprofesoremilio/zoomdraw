@@ -69,6 +69,13 @@ public class HelpWindow extends Stage {
         hideButton.setStyle("-fx-background-color: #444; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 5; -fx-padding: 5 15 5 15;");
         hideButton.setOnAction(e -> hide());
 
+        Button closeButton = new Button("Cerrar App");
+        closeButton.setStyle("-fx-background-color: #d9534f; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 5; -fx-padding: 5 15 5 15;");
+        closeButton.setOnAction(e -> {
+            javafx.application.Platform.exit();
+            System.exit(0);
+        });
+
         Label opacityLabel = new Label("Opacidad:");
         opacityLabel.setTextFill(Color.LIGHTGRAY);
 
@@ -79,7 +86,7 @@ public class HelpWindow extends Stage {
         // Bind the stage opacity to the slider
         this.opacityProperty().bind(opacitySlider.valueProperty());
 
-        controlBox.getChildren().addAll(hideButton, opacityLabel, opacitySlider);
+        controlBox.getChildren().addAll(hideButton, closeButton, opacityLabel, opacitySlider);
         
         root.getChildren().addAll(title, shortcuts, controlBox);
         

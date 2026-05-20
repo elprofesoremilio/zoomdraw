@@ -16,6 +16,8 @@ import javafx.scene.shape.StrokeLineJoin;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.scene.input.KeyCode;
+import javafx.scene.ImageCursor;
+import javafx.scene.SnapshotParameters;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -50,6 +52,8 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
 
     private Color backgroundColorOverride = null;
 
+    private final ImageCursor pencilCursor;
+
     public boolean isTextModeActive() {
         return isTextModeActive;
     }
@@ -67,6 +71,27 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
         // Initialize temporal canvas
         canvasTemporal = new Canvas(bounds.getWidth(), bounds.getHeight());
         gcTemporal = canvasTemporal.getGraphicsContext2D();
+
+        // Create pencil cursor
+        Canvas cursorCanvas = new Canvas(32, 32);
+        GraphicsContext cgc = cursorCanvas.getGraphicsContext2D();
+        cgc.setStroke(Color.BLACK);
+        cgc.setFill(Color.YELLOW);
+        cgc.setLineWidth(1.5);
+        cgc.fillPolygon(new double[] { 8, 24, 28, 12 }, new double[] { 12, 28, 24, 8 }, 4);
+        cgc.strokePolygon(new double[] { 8, 24, 28, 12 }, new double[] { 12, 28, 24, 8 }, 4);
+        cgc.setFill(Color.TAN);
+        cgc.fillPolygon(new double[] { 0, 8, 12 }, new double[] { 0, 12, 8 }, 3);
+        cgc.strokePolygon(new double[] { 0, 8, 12 }, new double[] { 0, 12, 8 }, 3);
+        cgc.setFill(Color.BLACK);
+        cgc.fillPolygon(new double[] { 0, 3, 5 }, new double[] { 0, 5, 3 }, 3);
+        cgc.setFill(Color.PINK);
+        cgc.fillPolygon(new double[] { 24, 28, 31, 27 }, new double[] { 28, 24, 27, 31 }, 4);
+        cgc.strokePolygon(new double[] { 24, 28, 31, 27 }, new double[] { 28, 24, 27, 31 }, 4);
+        SnapshotParameters params = new SnapshotParameters();
+        params.setFill(Color.TRANSPARENT);
+        WritableImage cursorImage = cursorCanvas.snapshot(params, null);
+        this.pencilCursor = new ImageCursor(cursorImage, 0, 0);
 
         // Set initial brush settings for both GCs
         updateBrushSettings();
@@ -90,7 +115,7 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
                     scene.setCursor(javafx.scene.Cursor.TEXT);
                     activeShapeMode = DrawMode.TEXT;
                 } else {
-                    scene.setCursor(javafx.scene.Cursor.DEFAULT);
+                    scene.setCursor(pencilCursor);
                     activeShapeMode = DrawMode.PENCIL;
                 }
                 event.consume();
@@ -122,7 +147,7 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
                 if (event.getCode() == KeyCode.ESCAPE) {
                     isTextModeActive = false;
                     activeShapeMode = DrawMode.PENCIL;
-                    scene.setCursor(javafx.scene.Cursor.DEFAULT);
+                    scene.setCursor(pencilCursor);
                     event.consume();
                 } else if (!event.isControlDown() && !event.isAltDown() && !event.isMetaDown()) {
                     // En modo texto pero sin escribir, consumimos las teclas de colores y formas
@@ -231,7 +256,7 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
                     finishTextCommand();
                     isTextModeActive = false;
                     activeShapeMode = DrawMode.PENCIL;
-                    this.getScene().setCursor(javafx.scene.Cursor.DEFAULT);
+                    this.getScene().setCursor(pencilCursor);
                     return; // Do not trigger other tools and do not start a new text block
                 }
                 if (event.getButton() == javafx.scene.input.MouseButton.PRIMARY) {
@@ -267,9 +292,9 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
                     activeShapeMode = DrawMode.FILLED_ELLIPSE;
                 else { // if (isCPressed) { // sobrentendido
                     activeShapeMode = DrawMode.CENSOR_RECTANGLE;
-                    javafx.scene.SnapshotParameters params = new javafx.scene.SnapshotParameters();
-                    params.setFill(Color.TRANSPARENT);
-                    currentCanvasSnapshot = canvasPermanent.snapshot(params, null);
+                    javafx.scene.SnapshotParameters paramsCensor = new javafx.scene.SnapshotParameters();
+                    paramsCensor.setFill(Color.TRANSPARENT);
+                    currentCanvasSnapshot = canvasPermanent.snapshot(paramsCensor, null);
                 }
 
                 isDrawingShape = true;
@@ -328,6 +353,7 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
             }
         });
 
+        scene.setCursor(pencilCursor);
         this.setScene(scene);
         this.setAlwaysOnTop(true);
 
@@ -393,7 +419,7 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
         currentTextCommand = null;
         isTyping = false;
         isTextModeActive = false;
-        this.getScene().setCursor(javafx.scene.Cursor.DEFAULT);
+        this.getScene().setCursor(pencilCursor);
         gcTemporal.clearRect(0, 0, canvasTemporal.getWidth(), canvasTemporal.getHeight());
     }
 

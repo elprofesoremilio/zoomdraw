@@ -38,6 +38,38 @@ public class AppLauncher extends Application {
         // Registrar el hook global
         globalKeyHook = new GlobalKeyHook(annotationManager, toggleCommand, stopCommand);
         globalKeyHook.register();
+
+        // System Tray
+        if (java.awt.SystemTray.isSupported()) {
+            java.awt.SystemTray tray = java.awt.SystemTray.getSystemTray();
+            
+            // Generar un icono simple rojo para el tray icon
+            java.awt.image.BufferedImage img = new java.awt.image.BufferedImage(16, 16, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+            java.awt.Graphics2D g2d = img.createGraphics();
+            g2d.setColor(java.awt.Color.RED);
+            g2d.fillOval(0,0,16,16);
+            g2d.setColor(java.awt.Color.WHITE);
+            g2d.drawOval(0,0,15,15);
+            g2d.dispose();
+            
+            java.awt.TrayIcon trayIcon = new java.awt.TrayIcon(img, "ZoomDraw");
+            trayIcon.setImageAutoSize(true);
+            
+            java.awt.PopupMenu popup = new java.awt.PopupMenu();
+            java.awt.MenuItem exitItem = new java.awt.MenuItem("Salir");
+            exitItem.addActionListener(e -> {
+                Platform.exit();
+                System.exit(0);
+            });
+            popup.add(exitItem);
+            
+            trayIcon.setPopupMenu(popup);
+            try {
+                tray.add(trayIcon);
+            } catch (java.awt.AWTException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     @Override
