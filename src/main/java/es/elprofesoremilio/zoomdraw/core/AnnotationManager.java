@@ -6,6 +6,8 @@ import es.elprofesoremilio.zoomdraw.utils.ScreenUtils;
 import javafx.application.Platform;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.image.WritableImage;
+import es.elprofesoremilio.zoomdraw.utils.AppLogger;
+import es.elprofesoremilio.zoomdraw.commands.CommandHistory;
 
 /**
  * Orchestrates the annotation mode lifecycle.
@@ -16,9 +18,15 @@ public class AnnotationManager {
     private HelpWindow helpWindow = null;
     private volatile boolean active = false;
     private final BrushSettings brushSettings; // Use the new BrushSettings class
+    private final CommandHistory globalHistory;
 
     public AnnotationManager() {
         this.brushSettings = new BrushSettings();
+        this.globalHistory = new CommandHistory();
+    }
+
+    public CommandHistory getGlobalHistory() {
+        return globalHistory;
     }
 
     public double getCurrentOpacity() {
@@ -96,7 +104,7 @@ public class AnnotationManager {
         if (active)
             return;
 
-        System.out.println("Starting annotation mode");
+        AppLogger.log("Starting annotation mode");
 
         try {
             // Obtenemos las coordenadas (esto sí puede ir fuera del hilo)
@@ -126,7 +134,7 @@ public class AnnotationManager {
             });
 
         } catch (Exception e) {
-            System.out.println("Error starting annotation mode: " + e.getMessage());
+            AppLogger.logError("Error starting annotation mode: " + e.getMessage());
         }
     }
 

@@ -31,7 +31,10 @@ public class HelpWindow extends Stage {
         title.setTextFill(Color.WHITE);
         
         Label shortcuts = new Label(
-            "Dibujo y Herramientas:\n" +
+            "CTRL + 1: Activar/desactivar modo anotación\n" +
+                    "\t(se puede desactivar con ESC también)\n\n" +
+                "CTRL + 0: Mostrar/Ocultar esta ayuda\n\n"+
+                    "Dibujo y Herramientas:\n" +
             "\tClick Izquierdo: Dibujar trazo libre / texto\n" +
             "\tCTRL + Z: Deshacer\n" +
             "\tCTRL + Y: Rehacer\n" +
@@ -47,15 +50,14 @@ public class HelpWindow extends Stage {
             "\tSHIFT + R / E / ALT+E: Formas rellenas\n" +
             "\tSHIFT + C: Modo Censura (Pixelado)\n\n" +
             "Color y Grosor:\n" +
-            "\tR: Rojo | G: Verde | B: Azul | Y: Amarillo\nL: Gris claro | D: Gris oscuro\n" +
+            "\tR: Rojo | G: Verde | B: Azul | Y: Amarillo L: Gris claro | D: Gris oscuro\n" +
             "\tC: Cyan | O: Naranja | P: Rosa | M: Magenta | K: Negro | W: Blanco\n" +
             "\tFlecha Arriba / Abajo (o + / -): Cambiar grosor del trazo\n\n" +
             "Opacidad y Fondo:\n" +
             "\tFlecha Izq / Der: Cambiar opacidad del trazo (10%)\n" +
             "\tSHIFT + 1-9, 0: Establecer opacidad absoluta (10% - 100%)\n" +
             "\tCTRL + K: Alternar fondo negro\n" +
-            "\tCTRL + W: Alternar fondo blanco\n\n" +
-            "CTRL + 0: Mostrar/Ocultar esta ayuda"
+            "\tCTRL + W: Alternar fondo blanco\n\n"
         );
         shortcuts.setFont(Font.font("System", 14));
         shortcuts.setTextFill(Color.WHITE);
@@ -83,8 +85,8 @@ public class HelpWindow extends Stage {
         opacitySlider.setShowTickMarks(false);
         opacitySlider.setShowTickLabels(false);
         
-        // Bind the stage opacity to the slider
-        this.opacityProperty().bind(opacitySlider.valueProperty());
+        // Bind the root node's opacity to the slider (fixes opacity on Linux X11)
+        root.opacityProperty().bind(opacitySlider.valueProperty());
 
         controlBox.getChildren().addAll(hideButton, closeButton, opacityLabel, opacitySlider);
         

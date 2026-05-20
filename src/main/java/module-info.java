@@ -1,15 +1,12 @@
 /**
  * Módulo JPMS de ZoomDraw.
- *
  * Declarar el módulo elimina el warning:
  *   "Unsupported JavaFX configuration: classes were loaded from 'unnamed module'"
- *
  * JNativeHook 2.2.2 es un automatic module cuyo nombre viene definido en su
  * MANIFEST.MF (Automatic-Module-Name: com.github.kwhat.jnativehook).
  */
 /**
  * Módulo JPMS de ZoomDraw.
- *
  * Declarar el módulo elimina el warning:
  * "Unsupported JavaFX configuration: classes were loaded from 'unnamed module'"
  */

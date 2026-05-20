@@ -51,16 +51,16 @@ public class UbuntuWaylandIntegrator extends Application {
         // 2. Iniciar el oyente interno
         startListenerServer();
 
-        System.out.println("✅ ZoomDraw Integrator iniciado.");
-        System.out.println("✅ Atajo CTRL+1 registrado nativamente en GNOME.");
-        System.out.println("Prueba a pulsar CTRL+1 ahora mismo.");
+        es.elprofesoremilio.zoomdraw.utils.AppLogger.log("✅ ZoomDraw Integrator iniciado.");
+        es.elprofesoremilio.zoomdraw.utils.AppLogger.log("✅ Atajo CTRL+1 registrado nativamente en GNOME.");
+        es.elprofesoremilio.zoomdraw.utils.AppLogger.log("Prueba a pulsar CTRL+1 ahora mismo.");
     }
 
     @Override
     public void stop() {
         // Limpiar el sistema operativo al salir (Clean Exit)
         removeNativeShortcut();
-        System.out.println("🛑 ZoomDraw cerrado. Sistema limpio.");
+        es.elprofesoremilio.zoomdraw.utils.AppLogger.log("🛑 ZoomDraw cerrado. Sistema limpio.");
         System.exit(0);
     }
 
@@ -93,7 +93,7 @@ public class UbuntuWaylandIntegrator extends Application {
                 execCmd("gsettings", "set", "org.gnome.settings-daemon.plugins.media-keys", "custom-keybindings", array);
             }
         } catch (Exception e) {
-            System.err.println("Error instalando atajo nativo: " + e.getMessage());
+            es.elprofesoremilio.zoomdraw.utils.AppLogger.logError("Error instalando atajo nativo: " + e.getMessage());
         }
     }
 
@@ -150,7 +150,7 @@ public class UbuntuWaylandIntegrator extends Application {
                     }
                 }
             } catch (Exception e) {
-                System.err.println("Listener Server Error: " + e.getMessage());
+                es.elprofesoremilio.zoomdraw.utils.AppLogger.logError("Listener Server Error: " + e.getMessage());
             }
         });
         serverThread.setDaemon(true);

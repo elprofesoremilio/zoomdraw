@@ -1,6 +1,7 @@
 package es.elprofesoremilio.zoomdraw.ui;
 
 import es.elprofesoremilio.zoomdraw.commands.*;
+import es.elprofesoremilio.zoomdraw.config.AppConfig;
 import es.elprofesoremilio.zoomdraw.core.AnnotationManager;
 import es.elprofesoremilio.zoomdraw.core.DrawMode;
 import javafx.geometry.Point2D;
@@ -32,7 +33,7 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
     private final GraphicsContext gcTemporal;
 
     private final List<Point2D> currentStrokePoints = new ArrayList<>();
-    private final CommandHistory commandHistory = new CommandHistory();
+    private final CommandHistory commandHistory;
     private final WritableImage background;
 
     private DrawMode activeShapeMode = DrawMode.PENCIL;
@@ -62,6 +63,7 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
         super(StageStyle.TRANSPARENT);
         this.manager = manager;
         this.background = background;
+        this.commandHistory = manager.getGlobalHistory();
 
         // Initialize permanent canvas
         canvasPermanent = new Canvas(bounds.getWidth(), bounds.getHeight());
@@ -95,6 +97,9 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
 
         // Set initial brush settings for both GCs
         updateBrushSettings();
+        
+        // Dibuja el historial sobre el fondo
+        redrawAll();
 
         StackPane root = new StackPane(canvasPermanent, canvasTemporal);
         root.setBackground(null);
@@ -122,6 +127,7 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
                 return;
             }
 
+            boolean noSpecialKeys = !event.isControlDown() && !event.isAltDown() && !event.isMetaDown();
             if (isTyping) {
                 if (event.getCode() == KeyCode.ESCAPE) {
                     cancelTextCommand();
@@ -140,7 +146,7 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
                             manager.getCurrentColor(), manager.getCurrentLineWidth());
                     redrawTextTemporal();
                     event.consume();
-                } else if (!event.isControlDown() && !event.isAltDown() && !event.isMetaDown()) {
+                } else if (noSpecialKeys) {
                     // Prevenir que otras teclas se procesen como atajos mientras se escribe
                 }
             } else if (isTextModeActive) {
@@ -149,20 +155,32 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
                     activeShapeMode = DrawMode.PENCIL;
                     scene.setCursor(pencilCursor);
                     event.consume();
-                } else if (!event.isControlDown() && !event.isAltDown() && !event.isMetaDown()) {
+                } else if (noSpecialKeys) {
                     // En modo texto pero sin escribir, consumimos las teclas de colores y formas
                     // para que no hagan nada
                     if (event.getCode().isLetterKey() || event.getCode().isDigitKey()) {
                         event.consume();
                     }
                 }
+            } else if (!event.isControlDown() && !event.isAltDown() && !event.isMetaDown() && !event.isShiftDown()) {
+                // Number keys for stroke thickness
+                if (event.getCode() == KeyCode.DIGIT1) { manager.setCurrentLineWidth(AppConfig.LINE_WIDTH_MULTIPLIER); updateBrushSettings(); event.consume(); }
+                else if (event.getCode() == KeyCode.DIGIT2) { manager.setCurrentLineWidth(2.0*AppConfig.LINE_WIDTH_MULTIPLIER); updateBrushSettings(); event.consume(); }
+                else if (event.getCode() == KeyCode.DIGIT3) { manager.setCurrentLineWidth(3.0*AppConfig.LINE_WIDTH_MULTIPLIER); updateBrushSettings(); event.consume(); }
+                else if (event.getCode() == KeyCode.DIGIT4) { manager.setCurrentLineWidth(4.0*AppConfig.LINE_WIDTH_MULTIPLIER); updateBrushSettings(); event.consume(); }
+                else if (event.getCode() == KeyCode.DIGIT5) { manager.setCurrentLineWidth(5.0*AppConfig.LINE_WIDTH_MULTIPLIER); updateBrushSettings(); event.consume(); }
+                else if (event.getCode() == KeyCode.DIGIT6) { manager.setCurrentLineWidth(6.0*AppConfig.LINE_WIDTH_MULTIPLIER); updateBrushSettings(); event.consume(); }
+                else if (event.getCode() == KeyCode.DIGIT7) { manager.setCurrentLineWidth(7.0*AppConfig.LINE_WIDTH_MULTIPLIER); updateBrushSettings(); event.consume(); }
+                else if (event.getCode() == KeyCode.DIGIT8) { manager.setCurrentLineWidth(8.0*AppConfig.LINE_WIDTH_MULTIPLIER); updateBrushSettings(); event.consume(); }
+                else if (event.getCode() == KeyCode.DIGIT9) { manager.setCurrentLineWidth(9.0*AppConfig.LINE_WIDTH_MULTIPLIER); updateBrushSettings(); event.consume(); }
+                else if (event.getCode() == KeyCode.DIGIT0) { manager.setCurrentLineWidth(10.0*AppConfig.LINE_WIDTH_MULTIPLIER); updateBrushSettings(); event.consume(); }
             }
         });
 
         scene.addEventFilter(javafx.scene.input.KeyEvent.KEY_TYPED, event -> {
             if (isTyping) {
                 String character = event.getCharacter();
-                if (character.length() > 0 && character.charAt(0) >= 32 && character.charAt(0) != 127) {
+                if (!character.isEmpty() && character.charAt(0) >= 32 && character.charAt(0) != 127) {
                     currentTextCommand.append(character, manager.getCurrentColor(), manager.getCurrentLineWidth());
                     redrawTextTemporal();
                 }
@@ -388,7 +406,17 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
             gcPermanent.setFill(backgroundColorOverride);
             gcPermanent.fillRect(0, 0, canvasPermanent.getWidth(), canvasPermanent.getHeight());
         } else {
-            gcPermanent.drawImage(background, 0, 0);
+            // Limpiamos el canvas
+            gcPermanent.clearRect(0, 0, canvasPermanent.getWidth(), canvasPermanent.getHeight());
+            // Aplicamos un fondo casi invisible (1% opacidad) para asegurar que el OS
+            // no trate la ventana como "click-through" (traspasable) si la captura falla
+            // o tiene píxeles transparentes por accidente.
+            gcPermanent.setFill(new Color(1, 1, 1, 0.01));
+            gcPermanent.fillRect(0, 0, canvasPermanent.getWidth(), canvasPermanent.getHeight());
+            
+            if (background != null) {
+                gcPermanent.drawImage(background, 0, 0);
+            }
         }
     }
 

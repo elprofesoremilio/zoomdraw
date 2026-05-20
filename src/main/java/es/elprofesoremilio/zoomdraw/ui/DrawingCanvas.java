@@ -49,7 +49,7 @@ public class DrawingCanvas extends Canvas {
                 AppConfig.FALLBACK_BACKGROUND_OPACITY
             ));
             gc.fillRect(0, 0, getWidth(), getHeight());
-            System.out.println("Fondo capturado nulo, usando cristal transparente.");
+            es.elprofesoremilio.zoomdraw.utils.AppLogger.log("Fondo capturado nulo, usando cristal transparente.");
         }
     }
 

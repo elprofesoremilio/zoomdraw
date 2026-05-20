@@ -3,6 +3,7 @@ package es.elprofesoremilio.zoomdraw.utils;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.image.WritableImage;
 import javafx.stage.Screen;
+import es.elprofesoremilio.zoomdraw.utils.AppLogger;
 
 import java.awt.*;
 
@@ -16,19 +17,19 @@ public class ScreenUtils {
      */
     public static Rectangle2D getScreenBoundsAtCursor() {
         Point cursor = MouseInfo.getPointerInfo().getLocation();
-        System.out.println("\n📍 Cursor físico (AWT): X=" + cursor.x + ", Y=" + cursor.y);
+        AppLogger.log("📍 Cursor físico (AWT): X=" + cursor.x + ", Y=" + cursor.y);
 
         for (Screen screen : Screen.getScreens()) {
             Rectangle2D bounds = screen.getBounds();
-            System.out.println("🖥️ Monitor detectado -> Inicio X: " + bounds.getMinX() + " | Ancho: " + bounds.getWidth());
+            AppLogger.log("🖥️ Monitor detectado -> Inicio X: " + bounds.getMinX() + " | Ancho: " + bounds.getWidth());
 
             if (bounds.contains(cursor.getX(), cursor.getY())) {
-                System.out.println("✅ ¡Match! Asignando lienzo al monitor que empieza en X=" + bounds.getMinX() + "\n");
+                AppLogger.log("✅ ¡Match! Asignando lienzo al monitor que empieza en X=" + bounds.getMinX());
                 return bounds;
             }
         }
 
-        System.out.println("⚠️ Alerta: No hubo match exacto. Usando principal.\n");
+        AppLogger.log("⚠️ Alerta: No hubo match exacto. Usando principal.");
         return Screen.getPrimary().getBounds();
     }
     /**
@@ -43,7 +44,7 @@ public class ScreenUtils {
             javafx.scene.robot.Robot fxRobot = new javafx.scene.robot.Robot();
             return fxRobot.getScreenCapture(null, bounds);
         } catch (Exception e) {
-            System.err.println("Error nativo al capturar pantalla: " + e.getMessage());
+            AppLogger.logError("Error nativo al capturar pantalla: " + e.getMessage());
             return null;
         }
     }

@@ -6,6 +6,7 @@ import es.elprofesoremilio.zoomdraw.commands.ToggleAnnotationModeCommand;
 import es.elprofesoremilio.zoomdraw.config.AppConfig;
 import es.elprofesoremilio.zoomdraw.core.AnnotationManager;
 import es.elprofesoremilio.zoomdraw.input.GlobalKeyHook;
+import es.elprofesoremilio.zoomdraw.utils.AppLogger;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.stage.Stage;
@@ -39,6 +40,7 @@ public class AppLauncher extends Application {
         globalKeyHook = new GlobalKeyHook(annotationManager, toggleCommand, stopCommand);
         globalKeyHook.register();
 
+        es.elprofesoremilio.zoomdraw.utils.AppLogger.log("SystemTray support is " + (java.awt.SystemTray.isSupported() ? "enabled" : "disabled"));
         // System Tray
         if (java.awt.SystemTray.isSupported()) {
             java.awt.SystemTray tray = java.awt.SystemTray.getSystemTray();
@@ -67,9 +69,11 @@ public class AppLauncher extends Application {
             try {
                 tray.add(trayIcon);
             } catch (java.awt.AWTException e) {
-                e.printStackTrace();
+                AppLogger.logError("Error al agregar el icono al tray");
             }
         }
+
+        annotationManager.toggleHelpWindow();
     }
 
     @Override

@@ -17,6 +17,9 @@ public class AppConfig {
     // JNativeHook Logger Level
     public static final Level JNATIVEHOOK_LOG_LEVEL = Level.OFF;
 
+    // App Logging
+    public static final boolean LOG_ENABLED = true;
+
     // DrawingCanvas Fallback Background
     public static final Color FALLBACK_BACKGROUND_COLOR = Color.WHITE;
     public static final double FALLBACK_BACKGROUND_OPACITY = 0.01;
@@ -72,6 +75,7 @@ public class AppConfig {
     public static final KeyCode LINE_WIDTH_DECREASE_KEY_1 = KeyCode.DOWN;
     public static final KeyCode LINE_WIDTH_DECREASE_KEY_2 = KeyCode.MINUS;
     public static final KeyCode LINE_WIDTH_DECREASE_KEY_3 = KeyCode.SUBTRACT;
+    public static final double LINE_WIDTH_MULTIPLIER = 3.0;
 
     // Colors
     public static final Color GREEN = new Color(0,1,0.2,1);

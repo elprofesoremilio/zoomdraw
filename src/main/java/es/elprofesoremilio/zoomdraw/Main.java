@@ -20,11 +20,11 @@ public class Main {
             fileChannel = new RandomAccessFile(lockFile, "rw").getChannel();
             lock = fileChannel.tryLock();
             if (lock == null) {
-                System.out.println("La aplicación ya está en ejecución. Saliendo...");
+                es.elprofesoremilio.zoomdraw.utils.AppLogger.log("La aplicación ya está en ejecución. Saliendo...");
                 System.exit(0);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            es.elprofesoremilio.zoomdraw.utils.AppLogger.logError("Error obtaining lock", e);
             System.exit(1);
         }
 

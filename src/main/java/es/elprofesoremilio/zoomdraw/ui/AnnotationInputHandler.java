@@ -40,20 +40,8 @@ public class AnnotationInputHandler {
             brushSettingsUpdater.updateBrushSettings();
             event.consume();
         } else if (event.isShiftDown()) {
-            double newAlpha = manager.getCurrentOpacity();
-            
-            // Note: JavaFX converts vertical scrolling to horizontal scrolling when SHIFT is held.
-            // Therefore, we must check both deltaY and deltaX.
-            double delta = event.getDeltaY() != 0 ? event.getDeltaY() : event.getDeltaX();
-            
-            if (delta > 0) {
-                // Scroll up/right: increase opacity
-                newAlpha = Math.min(1.0, newAlpha + 0.05);
-            } else if (delta < 0) {
-                // Scroll down/left: decrease opacity
-                newAlpha = Math.max(0.05, newAlpha - 0.05);
-            }
-            
+            double newAlpha = getNewAlpha(event);
+
             manager.setCurrentOpacity(newAlpha);
             
             Color current = manager.getCurrentColor();
@@ -62,6 +50,23 @@ public class AnnotationInputHandler {
             brushSettingsUpdater.updateBrushSettings();
             event.consume();
         }
+    }
+
+    private double getNewAlpha(ScrollEvent event) {
+        double newAlpha = manager.getCurrentOpacity();
+
+        // Note: JavaFX converts vertical scrolling to horizontal scrolling when SHIFT is held.
+        // Therefore, we must check both deltaY and deltaX.
+        double delta = event.getDeltaY() != 0 ? event.getDeltaY() : event.getDeltaX();
+
+        if (delta > 0) {
+            // Scroll up/right: increase opacity
+            newAlpha = Math.min(1.0, newAlpha + 0.05);
+        } else if (delta < 0) {
+            // Scroll down/left: decrease opacity
+            newAlpha = Math.max(0.05, newAlpha - 0.05);
+        }
+        return newAlpha;
     }
 
     private void handleKeyPressed(javafx.scene.input.KeyEvent event) {
@@ -81,31 +86,7 @@ public class AnnotationInputHandler {
 
         // --- COLOR LOGIC ---
         if (!event.isControlDown() && !event.isAltDown() && !event.isShiftDown() && !event.isMetaDown()) {
-            Color newBaseColor = null;
-            if (code == AppConfig.COLOR_RED_KEY)
-                newBaseColor = AppConfig.RED;
-            else if (code == AppConfig.COLOR_GREEN_KEY)
-                newBaseColor = AppConfig.GREEN;
-            else if (code == AppConfig.COLOR_BLUE_KEY)
-                newBaseColor = AppConfig.BLUE;
-            else if (code == AppConfig.COLOR_YELLOW_KEY)
-                newBaseColor = AppConfig.YELLOW;
-            else if (code == AppConfig.COLOR_ORANGE_KEY)
-                newBaseColor = AppConfig.ORANGE;
-            else if (code == AppConfig.COLOR_MAGENTA_KEY)
-                newBaseColor = AppConfig.MAGENTA;
-            else if (code == AppConfig.COLOR_BLACK_KEY)
-                newBaseColor = AppConfig.BLACK;
-            else if (code == AppConfig.COLOR_WHITE_KEY)
-                newBaseColor = AppConfig.WHITE;
-            else if (code == AppConfig.COLOR_CYAN_KEY)
-                newBaseColor = AppConfig.CYAN;
-            else if (code == AppConfig.COLOR_PINK_KEY)
-                newBaseColor = AppConfig.PINK;
-            else if (code == AppConfig.COLOR_GREY_KEY)
-                newBaseColor = AppConfig.GREY;
-            else if (code == AppConfig.COLOR_DARK_GREY_KEY)
-                newBaseColor = AppConfig.DARK_GREY;
+            Color newBaseColor = getColor(code);
 
 
             if (newBaseColor != null) {
@@ -213,5 +194,34 @@ public class AnnotationInputHandler {
                 event.consume();
             }
         }
+    }
+
+    private static Color getColor(KeyCode code) {
+        Color newBaseColor = null;
+        if (code == AppConfig.COLOR_RED_KEY)
+            newBaseColor = AppConfig.RED;
+        else if (code == AppConfig.COLOR_GREEN_KEY)
+            newBaseColor = AppConfig.GREEN;
+        else if (code == AppConfig.COLOR_BLUE_KEY)
+            newBaseColor = AppConfig.BLUE;
+        else if (code == AppConfig.COLOR_YELLOW_KEY)
+            newBaseColor = AppConfig.YELLOW;
+        else if (code == AppConfig.COLOR_ORANGE_KEY)
+            newBaseColor = AppConfig.ORANGE;
+        else if (code == AppConfig.COLOR_MAGENTA_KEY)
+            newBaseColor = AppConfig.MAGENTA;
+        else if (code == AppConfig.COLOR_BLACK_KEY)
+            newBaseColor = AppConfig.BLACK;
+        else if (code == AppConfig.COLOR_WHITE_KEY)
+            newBaseColor = AppConfig.WHITE;
+        else if (code == AppConfig.COLOR_CYAN_KEY)
+            newBaseColor = AppConfig.CYAN;
+        else if (code == AppConfig.COLOR_PINK_KEY)
+            newBaseColor = AppConfig.PINK;
+        else if (code == AppConfig.COLOR_GREY_KEY)
+            newBaseColor = AppConfig.GREY;
+        else if (code == AppConfig.COLOR_DARK_GREY_KEY)
+            newBaseColor = AppConfig.DARK_GREY;
+        return newBaseColor;
     }
 }
