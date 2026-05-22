@@ -19,6 +19,9 @@ module es.elprofesoremilio.zoomdraw { // Mejor usar el nombre del paquete base
     requires java.desktop;
     // Librerías de terceros (Automatic modules)
     requires com.github.kwhat.jnativehook;
+    requires org.slf4j;
+    requires ch.qos.logback.classic;
+    requires ch.qos.logback.core;
 
     // Exportar paquetes principales
     exports es.elprofesoremilio.zoomdraw;

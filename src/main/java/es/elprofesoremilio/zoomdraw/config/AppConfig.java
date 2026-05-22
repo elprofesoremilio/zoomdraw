@@ -19,6 +19,7 @@ public class AppConfig {
 
     // App Logging
     public static final boolean LOG_ENABLED = true;
+    public static final String APP_LOG_LEVEL = "INFO"; // TRACE, DEBUG, INFO, WARN, ERROR, OFF
 
     // DrawingCanvas Fallback Background
     public static final Color FALLBACK_BACKGROUND_COLOR = Color.WHITE;

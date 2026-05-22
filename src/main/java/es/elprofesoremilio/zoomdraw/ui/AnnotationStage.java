@@ -77,19 +77,38 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
         // Create pencil cursor
         Canvas cursorCanvas = new Canvas(32, 32);
         GraphicsContext cgc = cursorCanvas.getGraphicsContext2D();
+        cgc.setLineWidth(1.2);
         cgc.setStroke(Color.BLACK);
-        cgc.setFill(Color.YELLOW);
-        cgc.setLineWidth(1.5);
-        cgc.fillPolygon(new double[] { 8, 24, 28, 12 }, new double[] { 12, 28, 24, 8 }, 4);
-        cgc.strokePolygon(new double[] { 8, 24, 28, 12 }, new double[] { 12, 28, 24, 8 }, 4);
+        //   CUERPO
+        cgc.setFill(Color.GOLD);
+        double[] bodyX = {8, 23, 28, 13};
+        double[] bodyY = {13, 28, 23, 8};
+        cgc.fillPolygon(bodyX, bodyY, 4);
+        cgc.strokePolygon(bodyX, bodyY, 4);
+        //   MADERA
         cgc.setFill(Color.TAN);
-        cgc.fillPolygon(new double[] { 0, 8, 12 }, new double[] { 0, 12, 8 }, 3);
-        cgc.strokePolygon(new double[] { 0, 8, 12 }, new double[] { 0, 12, 8 }, 3);
+        double[] woodX = {2, 8, 13};
+        double[] woodY = {2, 13, 8};
+        cgc.fillPolygon(woodX, woodY, 3);
+        cgc.strokePolygon(woodX, woodY, 3);
+        //   PUNTA
         cgc.setFill(Color.BLACK);
-        cgc.fillPolygon(new double[] { 0, 3, 5 }, new double[] { 0, 5, 3 }, 3);
-        cgc.setFill(Color.PINK);
-        cgc.fillPolygon(new double[] { 24, 28, 31, 27 }, new double[] { 28, 24, 27, 31 }, 4);
-        cgc.strokePolygon(new double[] { 24, 28, 31, 27 }, new double[] { 28, 24, 27, 31 }, 4);
+        double[] tipX = {0, 3, 5};
+        double[] tipY = {0, 5, 3};
+        cgc.fillPolygon(tipX, tipY, 3);
+        //   GOMA
+        cgc.setFill(Color.HOTPINK);
+        double[] eraserX = {23, 28, 31, 26};
+        double[] eraserY = {28, 23, 26, 31};
+        cgc.fillPolygon(eraserX, eraserY, 4);
+        cgc.strokePolygon(eraserX, eraserY, 4);
+        //   METAL
+        cgc.setFill(Color.LIGHTGRAY);
+        double[] metalX = {20, 23, 26, 23};
+        double[] metalY = {25, 28, 25, 22};
+        cgc.fillPolygon(metalX, metalY, 4);
+        cgc.strokePolygon(metalX, metalY, 4);
+        //   SNAPSHOT
         SnapshotParameters params = new SnapshotParameters();
         params.setFill(Color.TRANSPARENT);
         WritableImage cursorImage = cursorCanvas.snapshot(params, null);
