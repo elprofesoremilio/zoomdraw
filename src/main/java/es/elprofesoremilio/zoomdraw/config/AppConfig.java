@@ -102,6 +102,8 @@ public class AppConfig {
     public static final double DEFAULT_LINE_WIDTH = 3.0;
     public static final double DEFAULT_OPACITY = 1.0;
 
+    public static boolean systemTrayLoaded = false;
+
 
     public static void loadSystemProperties() {
         System.setProperty("sun.java2d.uiScale", UI_SCALE);

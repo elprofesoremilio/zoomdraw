@@ -22,6 +22,7 @@ module es.elprofesoremilio.zoomdraw { // Mejor usar el nombre del paquete base
     requires org.slf4j;
     requires ch.qos.logback.classic;
     requires ch.qos.logback.core;
+    requires dorkbox.systemtray;
 
     // Exportar paquetes principales
     exports es.elprofesoremilio.zoomdraw;
