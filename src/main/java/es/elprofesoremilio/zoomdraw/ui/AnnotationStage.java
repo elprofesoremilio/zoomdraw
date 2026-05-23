@@ -235,6 +235,7 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
             switch (event.getCode()) {
                 case R:
                     isRPressed = true;
+                    event.consume();
                     break;
                 case E:
                     isEPressed = true;
@@ -242,12 +243,15 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
                         commandHistory.execute(new ClearCommand(this::drawCurrentBackground), gcPermanent);
                         redrawAll();
                     }
+                    event.consume();
                     break;
                 case F:
                     isFPressed = true;
+                    event.consume();
                     break;
                 case C:
                     isCPressed = true;
+                    event.consume();
                     break;
                 case ESCAPE:
                     if (isDrawingShape) {
@@ -266,15 +270,19 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
             switch (event.getCode()) {
                 case R:
                     isRPressed = false;
+                    event.consume();
                     break;
                 case E:
                     isEPressed = false;
+                    event.consume();
                     break;
                 case F:
                     isFPressed = false;
+                    event.consume();
                     break;
                 case C:
                     isCPressed = false;
+                    event.consume();
                     break;
                 default:
                     break;
@@ -306,34 +314,41 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
                 return; // Do not trigger other tools
             }
 
-            if (event.isControlDown()) {
-                if (isRPressed)
-                    activeShapeMode = DrawMode.RECTANGLE;
-                else if (event.isAltDown() && isEPressed)
-                    activeShapeMode = DrawMode.CIRCLE;
-                else if (isEPressed)
-                    activeShapeMode = DrawMode.ELLIPSE;
-                else if (isFPressed)
-                    activeShapeMode = DrawMode.ARROW;
-                else
-                    activeShapeMode = DrawMode.LINE;
+            boolean isCtrl = event.isControlDown();
+            boolean isShift = event.isShiftDown();
+            boolean isAlt = event.isAltDown();
 
-                isDrawingShape = true;
-                shapeStartPoint = new Point2D(event.getX(), event.getY());
-            } else if (event.isShiftDown() && (isRPressed || isEPressed || isCPressed)) {
-                if (isRPressed)
+            if (isShift && (isRPressed || isEPressed || isCPressed)) {
+                if (isRPressed) {
                     activeShapeMode = DrawMode.FILLED_RECTANGLE;
-                else if (event.isAltDown() && isEPressed)
-                    activeShapeMode = DrawMode.FILLED_CIRCLE;
-                else if (isEPressed)
-                    activeShapeMode = DrawMode.FILLED_ELLIPSE;
-                else { // if (isCPressed) { // sobrentendido
+                } else if (isEPressed) {
+                    if (isAlt) {
+                        activeShapeMode = DrawMode.FILLED_CIRCLE;
+                    } else {
+                        activeShapeMode = DrawMode.FILLED_ELLIPSE;
+                    }
+                } else { // isCPressed is true
                     activeShapeMode = DrawMode.CENSOR_RECTANGLE;
                     javafx.scene.SnapshotParameters paramsCensor = new javafx.scene.SnapshotParameters();
                     paramsCensor.setFill(Color.TRANSPARENT);
                     currentCanvasSnapshot = canvasPermanent.snapshot(paramsCensor, null);
                 }
-
+                isDrawingShape = true;
+                shapeStartPoint = new Point2D(event.getX(), event.getY());
+            } else if (isCtrl) {
+                if (isRPressed) {
+                    activeShapeMode = DrawMode.RECTANGLE;
+                } else if (isEPressed) {
+                    if (isAlt) {
+                        activeShapeMode = DrawMode.CIRCLE;
+                    } else {
+                        activeShapeMode = DrawMode.ELLIPSE;
+                    }
+                } else if (isFPressed) {
+                    activeShapeMode = DrawMode.ARROW;
+                } else {
+                    activeShapeMode = DrawMode.LINE;
+                }
                 isDrawingShape = true;
                 shapeStartPoint = new Point2D(event.getX(), event.getY());
             } else {

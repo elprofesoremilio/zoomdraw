@@ -40,9 +40,10 @@ public class AppLauncher extends Application {
         globalKeyHook = new GlobalKeyHook(annotationManager, toggleCommand, stopCommand);
         globalKeyHook.register();
 
-        es.elprofesoremilio.zoomdraw.utils.AppLogger.log("SystemTray support is " + (java.awt.SystemTray.isSupported() ? "enabled" : "disabled"));
+        boolean traySupported = java.awt.SystemTray.isSupported();
+        es.elprofesoremilio.zoomdraw.utils.AppLogger.log("SystemTray support is " + (traySupported ? "enabled" : "disabled"));
         // System Tray
-        if (java.awt.SystemTray.isSupported()) {
+        if (traySupported) {
             java.awt.SystemTray tray = java.awt.SystemTray.getSystemTray();
             
             // Generar un icono simple rojo para el tray icon
@@ -70,6 +71,15 @@ public class AppLauncher extends Application {
                 tray.add(trayIcon);
             } catch (java.awt.AWTException e) {
                 AppLogger.logError("Error al agregar el icono al tray");
+            }
+        } else {
+            AppLogger.log("Advertencia: El SystemTray de Java no esta disponible.");
+            if (System.getProperty("os.name").toLowerCase().contains("linux")) {
+                AppLogger.log("Sugerencia de solucion para Linux (GNOME/Ubuntu):");
+                AppLogger.log("La bandeja del sistema de Java requiere soporte de AppIndicator. Puede instalar la biblioteca e indicar a Java donde esta:");
+                AppLogger.log("  1. Instale la biblioteca Ayatana (o AppIndicator3): sudo apt install libayatana-appindicator3-1");
+                AppLogger.log("  2. Cree un enlace simbolico para que Java la encuentre:");
+                AppLogger.log("     sudo ln -s /usr/lib/x86_64-linux-gnu/libayatana-appindicator3.so.1 /usr/lib/x86_64-linux-gnu/libappindicator3.so.1");
             }
         }
 

@@ -90,7 +90,14 @@ public class HelpWindow extends Stage {
 
         controlBox.getChildren().addAll(hideButton, closeButton, opacityLabel, opacitySlider);
         
-        root.getChildren().addAll(title, shortcuts, controlBox);
+        if (!java.awt.SystemTray.isSupported()) {
+            Label trayWarning = new Label("⚠️ Bandeja del sistema no soportada. Use 'Cerrar App' para salir.");
+            trayWarning.setTextFill(Color.ORANGE);
+            trayWarning.setFont(Font.font("System", FontWeight.BOLD, 12));
+            root.getChildren().addAll(title, shortcuts, trayWarning, controlBox);
+        } else {
+            root.getChildren().addAll(title, shortcuts, controlBox);
+        }
         
         // Window dragging logic
         root.setOnMousePressed(event -> {
