@@ -13,16 +13,17 @@ import javafx.stage.Stage;
 
 import dorkbox.systemTray.MenuItem;
 import dorkbox.systemTray.SystemTray;
-import java.awt.PopupMenu;
-import java.awt.TrayIcon;
+
+import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.awt.Graphics2D;
-import java.awt.Color;
 import java.util.logging.Logger;
 
 public class AppLauncher extends Application {
 
     private GlobalKeyHook globalKeyHook;
+
+
+    BufferedImage trayIcon;
 
     // Tray nativo de AWT (Windows)
     private java.awt.SystemTray awtSystemTray;
@@ -55,6 +56,7 @@ public class AppLauncher extends Application {
         globalKeyHook.register();
 
         // Inicializar bandeja de sistema: nativa en Windows, Dorkbox en el resto
+        createTrayIcon();
         String os = System.getProperty("os.name", "").toLowerCase();
         if (os.contains("win")) {
             initAwtSystemTray();
@@ -65,16 +67,27 @@ public class AppLauncher extends Application {
         annotationManager.toggleHelpWindow();
     }
 
+    private void createTrayIcon() {
+        trayIcon = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2d = trayIcon.createGraphics();
+        g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+
+        // Letra Z (Zoom)
+        g2d.setFont(new Font("SansSerif", Font.BOLD, 10));
+        g2d.setColor(new Color(116, 185, 255)); // Azul brillante
+        g2d.drawString("Z", 1, 10);
+
+        // Letra D (Draw)
+        g2d.setFont(new Font("SansSerif", Font.BOLD, 10));
+        g2d.setColor(new Color(255, 234, 167)); // Amarillo suave
+        g2d.drawString("D", 7, 15);
+
+        g2d.dispose();
+    }
+
     /** Usa java.awt.SystemTray (estable en Windows; evita el NPE de Dorkbox en TrayPopup.doShow). */
     private void initAwtSystemTray() {
         try {
-            BufferedImage img = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
-            Graphics2D g2d = img.createGraphics();
-            g2d.setColor(Color.RED);
-            g2d.fillOval(0, 0, 16, 16);
-            g2d.setColor(Color.WHITE);
-            g2d.drawOval(0, 0, 15, 15);
-            g2d.dispose();
 
             PopupMenu popup = new PopupMenu();
             java.awt.MenuItem exitItem = new java.awt.MenuItem("Salir");
@@ -84,7 +97,7 @@ public class AppLauncher extends Application {
             });
             popup.add(exitItem);
 
-            awtTrayIcon = new TrayIcon(img, "ZoomDraw", popup);
+            awtTrayIcon = new TrayIcon(trayIcon, "ZoomDraw", popup);
             awtTrayIcon.setImageAutoSize(true);
 
             awtSystemTray = java.awt.SystemTray.getSystemTray();
@@ -105,15 +118,7 @@ public class AppLauncher extends Application {
             if (dorkboxSystemTray != null) {
                 AppLogger.log("Dorkbox SystemTray inicializado.");
 
-                BufferedImage img = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
-                Graphics2D g2d = img.createGraphics();
-                g2d.setColor(Color.RED);
-                g2d.fillOval(0, 0, 16, 16);
-                g2d.setColor(Color.WHITE);
-                g2d.drawOval(0, 0, 15, 15);
-                g2d.dispose();
-
-                dorkboxSystemTray.setImage(img);
+                dorkboxSystemTray.setImage(trayIcon);
                 dorkboxSystemTray.setTooltip("ZoomDraw");
 
                 dorkboxSystemTray.getMenu().add(new MenuItem("Ayuda", e -> {
