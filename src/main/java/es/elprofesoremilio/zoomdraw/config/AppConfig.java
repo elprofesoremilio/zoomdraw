@@ -104,6 +104,15 @@ public class AppConfig {
 
     public static boolean systemTrayLoaded = false;
 
+    // Laser Pointer Config
+    public static Color borderColor = Color.RED;
+    public static int bortherThickness = 7;
+    public static double borderOpacity = 0.5;
+    public static int circleRadius = 30;
+    public static boolean showCross = false;
+    public static Color crossColor = Color.WHITE;
+    public static int crossThickness = 1;
+
 
     public static void loadSystemProperties() {
         System.setProperty("sun.java2d.uiScale", UI_SCALE);

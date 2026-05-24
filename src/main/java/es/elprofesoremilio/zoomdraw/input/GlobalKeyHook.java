@@ -4,13 +4,15 @@ import com.github.kwhat.jnativehook.GlobalScreen;
 import com.github.kwhat.jnativehook.NativeHookException;
 import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent;
 import com.github.kwhat.jnativehook.keyboard.NativeKeyListener;
+import com.github.kwhat.jnativehook.mouse.NativeMouseEvent;
+import com.github.kwhat.jnativehook.mouse.NativeMouseMotionListener;
 import es.elprofesoremilio.zoomdraw.commands.Command;
 import es.elprofesoremilio.zoomdraw.core.AnnotationManager;
 import es.elprofesoremilio.zoomdraw.utils.AppLogger;
 
 import java.lang.reflect.Field;
 
-public class GlobalKeyHook implements NativeKeyListener {
+public class GlobalKeyHook implements NativeKeyListener, NativeMouseMotionListener {
 
     private final AnnotationManager manager; // Still needed for isActive() check
     private final Command toggleAnnotationModeCommand;
@@ -28,6 +30,7 @@ public class GlobalKeyHook implements NativeKeyListener {
         try {
             GlobalScreen.registerNativeHook();
             GlobalScreen.addNativeKeyListener(this);
+            GlobalScreen.addNativeMouseMotionListener(this);
         } catch (NativeHookException e) {
             AppLogger.logError("Failed to register Global Hook: " + e.getMessage());
         }
@@ -35,6 +38,8 @@ public class GlobalKeyHook implements NativeKeyListener {
 
     public void unregister() {
         try {
+            GlobalScreen.removeNativeMouseMotionListener(this);
+            GlobalScreen.removeNativeKeyListener(this);
             GlobalScreen.unregisterNativeHook();
         } catch (NativeHookException e) {
             AppLogger.logError("Error unregistering Global Hook", e);
@@ -52,19 +57,42 @@ public class GlobalKeyHook implements NativeKeyListener {
             toggleAnnotationModeCommand.execute();
         }
 
+        // CTRL + 2 (Modo Láser - solo si no está en modo anotación)
+        if (ctrlDown && keyCode == NativeKeyEvent.VC_2) {
+            consumeEvent(e);
+            if (!manager.isActive()) {
+                manager.toggleLaserMode();
+            }
+        }
+
         // CTRL + 0
         if (ctrlDown && keyCode == NativeKeyEvent.VC_0) {
             consumeEvent(e);
             manager.toggleHelpWindow();
         }
 
-        // ESC (solo si la app está activa y no estamos en modo texto)
+        // ESC
+        // Si el láser está activo, ESC lo apaga
+        if (keyCode == NativeKeyEvent.VC_ESCAPE && manager.isLaserActive()) {
+            consumeEvent(e);
+            manager.stopLaserMode();
+        }
         // Para no interferir con la cancelación de formas o modo texto en AnnotationStage,
         // GlobalKeyHook procesará el ESC solo si isTextModeActive es false
-        if (keyCode == NativeKeyEvent.VC_ESCAPE && manager.isActive() && !manager.isTextModeActive()) {
+        else if (keyCode == NativeKeyEvent.VC_ESCAPE && manager.isActive() && !manager.isTextModeActive()) {
             consumeEvent(e);
             stopAnnotationModeCommand.execute();
         }
+    }
+
+    @Override
+    public void nativeMouseMoved(NativeMouseEvent e) {
+        manager.updateLaserPosition(e.getX(), e.getY());
+    }
+
+    @Override
+    public void nativeMouseDragged(NativeMouseEvent e) {
+        manager.updateLaserPosition(e.getX(), e.getY());
     }
 
     /**
