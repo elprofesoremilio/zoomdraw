@@ -37,14 +37,21 @@ public class LaserPointerStage extends Stage {
     }
 
     /**
-     * Redraws the laser pointer circle and cross based on current settings in AppConfig.
+     * Redraws the laser pointer circle and cross at the canvas centre (150,150).
+     * Used when no position compensation is needed (e.g. initial draw or redraw after config change).
      */
     public void redraw() {
+        redraw(150, 150);
+    }
+
+    /**
+     * Redraws the laser pointer circle and cross at the given canvas coordinates.
+     * This overload is used by {@link #updatePosition} to compensate for edge clamping on Linux.
+     */
+    private void redraw(double centerX, double centerY) {
         gc.clearRect(0, 0, 300, 300);
 
         double radius = AppConfig.circleRadius;
-        double centerX = 150;
-        double centerY = 150;
 
         // 1. Draw the outer border circle with configured opacity
         Color baseColor = AppConfig.borderColor;
@@ -63,7 +70,7 @@ public class LaserPointerStage extends Stage {
         if (AppConfig.showCross) {
             gc.setStroke(AppConfig.crossColor);
             gc.setLineWidth(AppConfig.crossThickness);
-            
+
             // Draw cross extending 6px from the center in each direction
             gc.strokeLine(centerX - 6, centerY, centerX + 6, centerY);
             gc.strokeLine(centerX, centerY - 6, centerX, centerY + 6);
@@ -72,10 +79,26 @@ public class LaserPointerStage extends Stage {
 
     /**
      * Updates the position of the window, centering it at the provided coordinates.
+     * On Linux, JavaFX clamps Stage X/Y to ≥ 0, so when the cursor is near the top-left
+     * edge the window cannot move into negative coordinates. We compensate by shifting
+     * the drawn circle center within the 300×300 canvas so it always tracks the cursor.
      */
     public void updatePosition(double x, double y) {
-        setX(x - 150);
-        setY(y - 150);
+        double requestedX = x - 150;
+        double requestedY = y - 150;
+
+        // Clamp to screen origin (Linux behaviour)
+        double actualX = Math.max(0, requestedX);
+        double actualY = Math.max(0, requestedY);
+
+        setX(actualX);
+        setY(actualY);
+
+        // Shift the draw centre to compensate for any clamping
+        double drawCenterX = 150 + (requestedX - actualX);
+        double drawCenterY = 150 + (requestedY - actualY);
+
+        redraw(drawCenterX, drawCenterY);
     }
 
     /**

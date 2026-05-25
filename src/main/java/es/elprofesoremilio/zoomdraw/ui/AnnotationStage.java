@@ -22,6 +22,7 @@ import javafx.scene.SnapshotParameters;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Stack;
 
 public class AnnotationStage extends Stage implements BrushSettingsUpdater {
 
@@ -39,6 +40,15 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
     private double zoomFactor = 1.0;
     private double offsetX = 0.0;
     private double offsetY = 0.0;
+
+    private boolean isNumberingModeActive = false;
+    private final List<NumberedCircle> temporalCircles = new ArrayList<>();
+    private NumberedCircle selectedCircle = null;
+    private NumberedCircle hoveredCircle = null;
+    private final Stack<List<NumberedCircle>> numberingUndoStack = new Stack<>();
+    private final Stack<List<NumberedCircle>> numberingRedoStack = new Stack<>();
+    private Point2D dragOffset = null;
+    private Point2D dragStartCenter = null;
 
     private DrawMode activeShapeMode = DrawMode.PENCIL;
     private boolean isDrawingShape = false;
@@ -61,6 +71,10 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
 
     public boolean isTextModeActive() {
         return isTextModeActive;
+    }
+
+    public boolean isNumberingModeActive() {
+        return isNumberingModeActive;
     }
 
     public AnnotationStage(AnnotationManager manager, Rectangle2D bounds, WritableImage background) {
@@ -134,6 +148,31 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
         inputHandler.attach(scene);
 
         scene.addEventFilter(javafx.scene.input.KeyEvent.KEY_PRESSED, event -> {
+            if (isNumberingModeActive) {
+                boolean isCtrl = event.isControlDown();
+                boolean isShift = event.isShiftDown();
+
+                if (event.getCode() == KeyCode.ESCAPE) {
+                    // ESC cancels numbering mode without committing — discard circles, return to annotation
+                    cancelNumberingMode();
+                    event.consume();
+                } else if (isCtrl && event.getCode() == KeyCode.Z) {
+                    undoNumbering();
+                    event.consume();
+                } else if ((isCtrl && event.getCode() == KeyCode.Y) || (isCtrl && isShift && event.getCode() == KeyCode.Z)) {
+                    redoNumbering();
+                    event.consume();
+                } else if (event.getCode() == KeyCode.DELETE || event.getCode() == KeyCode.BACK_SPACE) {
+                    if (selectedCircle != null) {
+                        deleteSelectedNumber();
+                        event.consume();
+                    }
+                } else {
+                    event.consume();
+                }
+                return;
+            }
+
             if (event.getCode() == KeyCode.T) {
                 isTextModeActive = !isTextModeActive;
                 if (!isTextModeActive && isTyping) {
@@ -174,10 +213,12 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
                 }
             } else if (isTextModeActive) {
                 if (event.getCode() == KeyCode.ESCAPE) {
+                    // ESC only exits text sub-mode; stays in annotation mode
                     isTextModeActive = false;
                     activeShapeMode = DrawMode.PENCIL;
                     scene.setCursor(pencilCursor);
                     event.consume();
+                    return; // prevent the ESCAPE from propagating to the EXIT handler
                 } else if (noSpecialKeys) {
                     // En modo texto pero sin escribir, consumimos las teclas de colores y formas
                     // para que no hagan nada
@@ -201,6 +242,10 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
         });
 
         scene.addEventFilter(javafx.scene.input.KeyEvent.KEY_TYPED, event -> {
+            if (isNumberingModeActive) {
+                event.consume();
+                return;
+            }
             if (isTyping) {
                 String character = event.getCharacter();
                 if (!character.isEmpty() && character.charAt(0) >= 32 && character.charAt(0) != 127) {
@@ -215,6 +260,10 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
 
         // Key trackers for shapes
         scene.addEventHandler(javafx.scene.input.KeyEvent.KEY_PRESSED, event -> {
+            if (isNumberingModeActive) {
+                event.consume();
+                return;
+            }
             if (event.isControlDown()) {
                 if (event.getCode() == KeyCode.Z) {
                     commandHistory.undo(this::redrawAll);
@@ -237,6 +286,12 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
                 }
             }
             switch (event.getCode()) {
+                case N:
+                    if (!isNumberingModeActive && !isTextModeActive && !isTyping) {
+                        enterNumberingMode();
+                        event.consume();
+                    }
+                    break;
                 case R:
                     isRPressed = true;
                     event.consume();
@@ -271,6 +326,10 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
         });
 
         scene.addEventHandler(javafx.scene.input.KeyEvent.KEY_RELEASED, event -> {
+            if (isNumberingModeActive) {
+                event.consume();
+                return;
+            }
             switch (event.getCode()) {
                 case R:
                     isRPressed = false;
@@ -299,6 +358,64 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
                 this.requestFocus();
             }
             manager.bringHelpWindowToFront();
+
+            if (isNumberingModeActive) {
+                // Right-click commits the numbering session as a permanent stroke
+                if (event.getButton() == javafx.scene.input.MouseButton.SECONDARY) {
+                    exitNumberingMode();
+                    event.consume();
+                    return;
+                }
+                if (event.getButton() == javafx.scene.input.MouseButton.PRIMARY) {
+                    double mouseX = event.getX();
+                    double mouseY = event.getY();
+                    double cursorX_orig = (mouseX - offsetX) / zoomFactor;
+                    double cursorY_orig = (mouseY - offsetY) / zoomFactor;
+
+                    NumberedCircle clicked = null;
+                    double margin = 10.0;
+                    for (NumberedCircle c : temporalCircles) {
+                        double c_radius = Math.max(18, c.getLineWidth() * 2.0);
+                        double dist = Math.hypot(cursorX_orig - c.getCenter().getX(), cursorY_orig - c.getCenter().getY());
+                        if (dist <= c_radius + margin) {
+                            clicked = c;
+                            break;
+                        }
+                    }
+
+                    if (clicked != null) {
+                        pushNumberingUndoState();
+                        selectedCircle = clicked;
+                        dragStartCenter = clicked.getCenter();
+                        dragOffset = new Point2D(cursorX_orig - clicked.getCenter().getX(), cursorY_orig - clicked.getCenter().getY());
+                        hoveredCircle = null;
+                    } else {
+                        if (selectedCircle != null) {
+                            selectedCircle = null;
+                        } else {
+                            if (!isPreviewSuperposed(mouseX, mouseY)) {
+                                pushNumberingUndoState();
+                                double radius = Math.max(18, manager.getCurrentLineWidth() * 2.0);
+                                double previewX_orig = (mouseX - offsetX) / zoomFactor;
+                                double previewY_orig = (mouseY - offsetY) / zoomFactor - radius;
+                                
+                                int nextNum = temporalCircles.size() + 1;
+                                NumberedCircle newCircle = new NumberedCircle(
+                                    new Point2D(previewX_orig, previewY_orig),
+                                    nextNum,
+                                    manager.getCurrentColor(),
+                                    manager.getCurrentLineWidth(),
+                                    manager.getCurrentOpacity()
+                                );
+                                temporalCircles.add(newCircle);
+                            }
+                        }
+                    }
+                    redrawAll();
+                    drawNumberPreview(mouseX, mouseY);
+                }
+                return;
+            }
 
             if (isTextModeActive) {
                 if (isTyping) {
@@ -370,6 +487,21 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
         });
 
         scene.setOnMouseDragged(event -> {
+            if (isNumberingModeActive) {
+                if (selectedCircle != null && dragOffset != null) {
+                    double mouseX = event.getX();
+                    double mouseY = event.getY();
+                    double cursorX_orig = (mouseX - offsetX) / zoomFactor;
+                    double cursorY_orig = (mouseY - offsetY) / zoomFactor;
+
+                    selectedCircle.setCenter(new Point2D(cursorX_orig - dragOffset.getX(), cursorY_orig - dragOffset.getY()));
+                    
+                    redrawAll();
+                    gcTemporal.clearRect(0, 0, canvasTemporal.getWidth(), canvasTemporal.getHeight());
+                }
+                return;
+            }
+
             double origX = (event.getX() - offsetX) / zoomFactor;
             double origY = (event.getY() - offsetY) / zoomFactor;
             Point2D origPoint = new Point2D(origX, origY);
@@ -398,6 +530,23 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
         });
 
         scene.setOnMouseReleased(event -> {
+            if (isNumberingModeActive) {
+                if (selectedCircle != null && dragStartCenter != null) {
+                    if (selectedCircle.getCenter().distance(dragStartCenter) < 1.0) {
+                        if (!numberingUndoStack.isEmpty()) {
+                            numberingUndoStack.pop();
+                        }
+                    }
+                    dragStartCenter = null;
+                    dragOffset = null;
+                }
+                double mouseX = event.getX();
+                double mouseY = event.getY();
+                redrawAll();
+                drawNumberPreview(mouseX, mouseY);
+                return;
+            }
+
             double origX = (event.getX() - offsetX) / zoomFactor;
             double origY = (event.getY() - offsetY) / zoomFactor;
             Point2D origPoint = new Point2D(origX, origY);
@@ -429,6 +578,12 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
                     redrawAll();
                 }
                 currentStrokePoints.clear();
+            }
+        });
+
+        scene.setOnMouseMoved(event -> {
+            if (isNumberingModeActive) {
+                handleNumberingMouseMoved(event.getX(), event.getY());
             }
         });
 
@@ -500,6 +655,18 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
             cmd.execute(gcPermanent);
         }
         
+        if (isNumberingModeActive) {
+            for (NumberedCircle c : temporalCircles) {
+                if (c == hoveredCircle) {
+                    c.drawHoverHalo(gcPermanent);
+                }
+                c.draw(gcPermanent);
+                if (c == selectedCircle) {
+                    c.drawSelection(gcPermanent);
+                }
+            }
+        }
+        
         gcPermanent.restore();
         updateBrushSettings();
     }
@@ -562,6 +729,218 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
         return tempCanvas.snapshot(paramsCensor, null);
     }
 
+    private void enterNumberingMode() {
+        isNumberingModeActive = true;
+        temporalCircles.clear();
+        selectedCircle = null;
+        hoveredCircle = null;
+        numberingUndoStack.clear();
+        numberingRedoStack.clear();
+        this.getScene().setCursor(javafx.scene.Cursor.DEFAULT);
+        redrawAll();
+    }
+
+    /** Commits the numbering session as a permanent stroke and returns to free-draw. */
+    private void exitNumberingMode() {
+        isNumberingModeActive = false;
+
+        if (!temporalCircles.isEmpty()) {
+            NumberingSessionCommand cmd = new NumberingSessionCommand(temporalCircles);
+            gcPermanent.save();
+            gcPermanent.translate(offsetX, offsetY);
+            gcPermanent.scale(zoomFactor, zoomFactor);
+            commandHistory.execute(cmd, gcPermanent);
+            gcPermanent.restore();
+        }
+
+        temporalCircles.clear();
+        selectedCircle = null;
+        hoveredCircle = null;
+        numberingUndoStack.clear();
+        numberingRedoStack.clear();
+
+        this.getScene().setCursor(pencilCursor);
+        redrawAll();
+        gcTemporal.clearRect(0, 0, canvasTemporal.getWidth(), canvasTemporal.getHeight());
+    }
+
+    /** Cancels (discards) the numbering session and returns to free-draw without committing. */
+    private void cancelNumberingMode() {
+        manager.notifySubModeCancelled(); // stamp BEFORE clearing flags (race guard for GlobalKeyHook)
+        isNumberingModeActive = false;
+        temporalCircles.clear();
+        selectedCircle = null;
+        hoveredCircle = null;
+        numberingUndoStack.clear();
+        numberingRedoStack.clear();
+        this.getScene().setCursor(pencilCursor);
+        redrawAll();
+        gcTemporal.clearRect(0, 0, canvasTemporal.getWidth(), canvasTemporal.getHeight());
+    }
+
+    private void pushNumberingUndoState() {
+        List<NumberedCircle> copy = new ArrayList<>();
+        for (NumberedCircle c : temporalCircles) {
+            copy.add(new NumberedCircle(c));
+        }
+        numberingUndoStack.push(copy);
+        numberingRedoStack.clear();
+    }
+
+    private void undoNumbering() {
+        if (!numberingUndoStack.isEmpty()) {
+            List<NumberedCircle> currentCopy = new ArrayList<>();
+            for (NumberedCircle c : temporalCircles) {
+                currentCopy.add(new NumberedCircle(c));
+            }
+            numberingRedoStack.push(currentCopy);
+
+            List<NumberedCircle> prevState = numberingUndoStack.pop();
+            temporalCircles.clear();
+            for (NumberedCircle c : prevState) {
+                temporalCircles.add(new NumberedCircle(c));
+            }
+            selectedCircle = null;
+            hoveredCircle = null;
+            redrawAll();
+            gcTemporal.clearRect(0, 0, canvasTemporal.getWidth(), canvasTemporal.getHeight());
+        }
+    }
+
+    private void redoNumbering() {
+        if (!numberingRedoStack.isEmpty()) {
+            List<NumberedCircle> currentCopy = new ArrayList<>();
+            for (NumberedCircle c : temporalCircles) {
+                currentCopy.add(new NumberedCircle(c));
+            }
+            numberingUndoStack.push(currentCopy);
+
+            List<NumberedCircle> nextState = numberingRedoStack.pop();
+            temporalCircles.clear();
+            for (NumberedCircle c : nextState) {
+                temporalCircles.add(new NumberedCircle(c));
+            }
+            selectedCircle = null;
+            hoveredCircle = null;
+            redrawAll();
+            gcTemporal.clearRect(0, 0, canvasTemporal.getWidth(), canvasTemporal.getHeight());
+        }
+    }
+
+    private void deleteSelectedNumber() {
+        if (selectedCircle != null) {
+            pushNumberingUndoState();
+            int deletedNum = selectedCircle.getNumber();
+            temporalCircles.remove(selectedCircle);
+            selectedCircle = null;
+            
+            for (NumberedCircle c : temporalCircles) {
+                if (c.getNumber() > deletedNum) {
+                    c.setNumber(c.getNumber() - 1);
+                }
+            }
+            
+            redrawAll();
+            gcTemporal.clearRect(0, 0, canvasTemporal.getWidth(), canvasTemporal.getHeight());
+        }
+    }
+
+    private void handleNumberingMouseMoved(double mouseX, double mouseY) {
+        double radius = Math.max(18, manager.getCurrentLineWidth() * 2.0);
+        double previewX_orig = (mouseX - offsetX) / zoomFactor;
+        double previewY_orig = (mouseY - offsetY) / zoomFactor - radius;
+
+        NumberedCircle nextHovered = null;
+        double margin = 10.0;
+        double cursorX_orig = (mouseX - offsetX) / zoomFactor;
+        double cursorY_orig = (mouseY - offsetY) / zoomFactor;
+
+        // 1. Direct Hover check
+        for (NumberedCircle c : temporalCircles) {
+            double c_radius = Math.max(18, c.getLineWidth() * 2.0);
+            double dist = Math.hypot(cursorX_orig - c.getCenter().getX(), cursorY_orig - c.getCenter().getY());
+            if (dist <= c_radius + margin) {
+                nextHovered = c;
+                break;
+            }
+        }
+
+        // 2. Superposition check
+        if (nextHovered == null) {
+            for (NumberedCircle c : temporalCircles) {
+                double c_radius = Math.max(18, c.getLineWidth() * 2.0);
+                double dist = Math.hypot(previewX_orig - c.getCenter().getX(), previewY_orig - c.getCenter().getY());
+                if (dist < radius + c_radius) {
+                    nextHovered = c;
+                    break;
+                }
+            }
+        }
+
+        if (hoveredCircle != nextHovered) {
+            hoveredCircle = nextHovered;
+            redrawAll();
+        }
+
+        drawNumberPreview(mouseX, mouseY);
+    }
+
+    private void drawNumberPreview(double mouseX, double mouseY) {
+        gcTemporal.clearRect(0, 0, canvasTemporal.getWidth(), canvasTemporal.getHeight());
+        
+        if (!isNumberingModeActive) return;
+        if (hoveredCircle != null || isPreviewSuperposed(mouseX, mouseY)) {
+            return;
+        }
+
+        Color brushColor = manager.getCurrentColor();
+        double lineWidth = manager.getCurrentLineWidth();
+        double opacity = manager.getCurrentOpacity();
+
+        double previewOpacity = opacity * 0.5;
+        Color previewColor = new Color(brushColor.getRed(), brushColor.getGreen(), brushColor.getBlue(), previewOpacity);
+
+        double radius = Math.max(18, lineWidth * 2.0);
+        double previewX_orig = (mouseX - offsetX) / zoomFactor;
+        double previewY_orig = (mouseY - offsetY) / zoomFactor - radius;
+
+        gcTemporal.save();
+        gcTemporal.translate(offsetX, offsetY);
+        gcTemporal.scale(zoomFactor, zoomFactor);
+
+        gcTemporal.setFill(previewColor);
+        gcTemporal.fillOval(previewX_orig - radius, previewY_orig - radius, radius * 2, radius * 2);
+
+        double luminance = 0.299 * previewColor.getRed() + 0.587 * previewColor.getGreen() + 0.114 * previewColor.getBlue();
+        Color textColor = (luminance > 0.5) ? Color.BLACK : Color.WHITE;
+        Color finalTextColor = new Color(textColor.getRed(), textColor.getGreen(), textColor.getBlue(), previewColor.getOpacity());
+        gcTemporal.setFill(finalTextColor);
+
+        int nextNumber = temporalCircles.size() + 1;
+        String text = String.valueOf(nextNumber);
+        gcTemporal.setFont(javafx.scene.text.Font.font("System", javafx.scene.text.FontWeight.BOLD, radius * 0.9));
+        gcTemporal.setTextAlign(javafx.scene.text.TextAlignment.CENTER);
+        gcTemporal.setTextBaseline(javafx.geometry.VPos.CENTER);
+        gcTemporal.fillText(text, previewX_orig, previewY_orig);
+
+        gcTemporal.restore();
+    }
+
+    private boolean isPreviewSuperposed(double mouseX, double mouseY) {
+        double radius = Math.max(18, manager.getCurrentLineWidth() * 2.0);
+        double previewX_orig = (mouseX - offsetX) / zoomFactor;
+        double previewY_orig = (mouseY - offsetY) / zoomFactor - radius;
+
+        for (NumberedCircle c : temporalCircles) {
+            double c_radius = Math.max(18, c.getLineWidth() * 2.0);
+            double dist = Math.hypot(previewX_orig - c.getCenter().getX(), previewY_orig - c.getCenter().getY());
+            if (dist < radius + c_radius) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private void finishTextCommand() {
         if (currentTextCommand != null) {
             currentTextCommand.setShowCursor(false);
@@ -581,6 +960,7 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
     }
 
     private void cancelTextCommand() {
+        manager.notifySubModeCancelled(); // stamp BEFORE clearing flags (race guard for GlobalKeyHook)
         currentTextCommand = null;
         isTyping = false;
         isTextModeActive = false;

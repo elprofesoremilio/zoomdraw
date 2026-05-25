@@ -77,9 +77,14 @@ public class GlobalKeyHook implements NativeKeyListener, NativeMouseMotionListen
             consumeEvent(e);
             manager.stopLaserMode();
         }
-        // Para no interferir con la cancelación de formas o modo texto en AnnotationStage,
-        // GlobalKeyHook procesará el ESC solo si isTextModeActive es false
-        else if (keyCode == NativeKeyEvent.VC_ESCAPE && manager.isActive() && !manager.isTextModeActive()) {
+        // Solo cerrar el modo anotación si:
+        //  - Ningún sub-modo (texto / numeración) está activo, Y
+        //  - No se acaba de cancelar un sub-modo (ventana de 300 ms para cubrir la
+        //    condición de carrera entre el hilo JNativeHook y el hilo JavaFX en Linux).
+        else if (keyCode == NativeKeyEvent.VC_ESCAPE && manager.isActive()
+                && !manager.isTextModeActive()
+                && !manager.isNumberingModeActive()
+                && !manager.wasSubModeRecentlyCancelled()) {
             consumeEvent(e);
             stopAnnotationModeCommand.execute();
         }

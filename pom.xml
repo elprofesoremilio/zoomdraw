@@ -160,7 +160,7 @@
                                     </classPath>
                                     <jre>
                                         <minVersion>21</minVersion>
-                                        <bundledJre64Bit>true</bundledJre64Bit>
+                                        <bundbnledJre64Bit>true</bundbnledJre64Bit>
                                     </jre>
                                 </configuration>
                             </execution>

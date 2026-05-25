@@ -22,6 +22,15 @@ public class AnnotationManager {
     private final BrushSettings brushSettings; // Use the new BrushSettings class
     private final CommandHistory globalHistory;
 
+    /**
+     * Timestamp (ms) of the last sub-mode (text / numbering) cancellation.
+     * Used by GlobalKeyHook to avoid closing annotation mode during the race
+     * between the JNativeHook dispatch thread and the JavaFX application thread
+     * on Linux: if a sub-mode was cancelled very recently, ESC should NOT also
+     * exit annotation mode.
+     */
+    private volatile long subModeCancelledAtMillis = 0;
+
     public AnnotationManager() {
         this.brushSettings = new BrushSettings();
         this.globalHistory = new CommandHistory();
@@ -214,6 +223,28 @@ public class AnnotationManager {
 
     public boolean isTextModeActive() {
         return currentStage != null && currentStage.isTextModeActive();
+    }
+
+    public boolean isNumberingModeActive() {
+        return currentStage != null && currentStage.isNumberingModeActive();
+    }
+
+    /**
+     * Called by AnnotationStage when a sub-mode (text or numbering) is cancelled
+     * via ESC. Stamps a timestamp so that GlobalKeyHook can suppress the
+     * stopAnnotationMode call that would otherwise fire due to the race between
+     * the JNativeHook dispatch thread and the JavaFX application thread.
+     */
+    public void notifySubModeCancelled() {
+        subModeCancelledAtMillis = System.currentTimeMillis();
+    }
+
+    /**
+     * Returns true if a sub-mode was cancelled within the last 300 ms.
+     * Queried from the JNativeHook thread by GlobalKeyHook.
+     */
+    public boolean wasSubModeRecentlyCancelled() {
+        return (System.currentTimeMillis() - subModeCancelledAtMillis) < 300;
     }
 
     public boolean isStageFocused() {

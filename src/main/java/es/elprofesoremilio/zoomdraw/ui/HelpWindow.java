@@ -51,7 +51,14 @@ public class HelpWindow extends Stage {
             "Dibujo y Herramientas (Modo Anotación):\n" +
             "\tClick Izquierdo: Dibujar trazo libre / colocar texto\n" +
             "\tCTRL + Z: Deshacer  |  CTRL + Y: Rehacer\n" +
-            "\tE: Borrar lienzo completo  |  T: Modo Texto\n\n" +
+            "\tE: Borrar lienzo completo  |  T: Modo Texto  |  N: Modo Numeración Automática\n\n" +
+            "Modo Numeración Automática (N):\n" +
+            "\tClick Izq en vacío: Insertar número secuencial (1, 2, 3...)\n" +
+            "\tArrastrar número: Mover número libremente\n" +
+            "\tClick en número: Seleccionar para arrastrar o borrar\n" +
+            "\tDEL / Backspace: Borrar seleccionado y reordenar secuencia\n" +
+            "\tCTRL + Z / Y: Deshacer / rehacer movimientos y borrados temporales\n" +
+            "\tESC: Salir de numeración (combina todos los números en un único comando)\n\n" +
             "Formas Geométricas (Mantener atajo + arrastrar ratón):\n" +
             "\tCTRL: Línea  |  CTRL + F: Flecha\n" +
             "\tCTRL + R: Rectángulo  |  CTRL + E: Elipse  |  CTRL + ALT + E: Círculo\n" +
