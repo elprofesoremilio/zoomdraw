@@ -36,6 +36,10 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
     private final CommandHistory commandHistory;
     private final WritableImage background;
 
+    private double zoomFactor = 1.0;
+    private double offsetX = 0.0;
+    private double offsetY = 0.0;
+
     private DrawMode activeShapeMode = DrawMode.PENCIL;
     private boolean isDrawingShape = false;
     private Point2D shapeStartPoint = null;
@@ -306,7 +310,9 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
                 }
                 if (event.getButton() == javafx.scene.input.MouseButton.PRIMARY) {
                     isTyping = true;
-                    currentTextCommand = new TextCommand(new Point2D(event.getX(), event.getY()),
+                    double origX = (event.getX() - offsetX) / zoomFactor;
+                    double origY = (event.getY() - offsetY) / zoomFactor;
+                    currentTextCommand = new TextCommand(new Point2D(origX, origY),
                             manager.getCurrentColor(), manager.getCurrentLineWidth());
                     scene.setCursor(javafx.scene.Cursor.NONE);
                     redrawTextTemporal();
@@ -329,12 +335,12 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
                     }
                 } else { // isCPressed is true
                     activeShapeMode = DrawMode.CENSOR_RECTANGLE;
-                    javafx.scene.SnapshotParameters paramsCensor = new javafx.scene.SnapshotParameters();
-                    paramsCensor.setFill(Color.TRANSPARENT);
-                    currentCanvasSnapshot = canvasPermanent.snapshot(paramsCensor, null);
+                    currentCanvasSnapshot = get1xCanvasSnapshot();
                 }
                 isDrawingShape = true;
-                shapeStartPoint = new Point2D(event.getX(), event.getY());
+                double origX = (event.getX() - offsetX) / zoomFactor;
+                double origY = (event.getY() - offsetY) / zoomFactor;
+                shapeStartPoint = new Point2D(origX, origY);
             } else if (isCtrl) {
                 if (isRPressed) {
                     activeShapeMode = DrawMode.RECTANGLE;
@@ -350,38 +356,62 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
                     activeShapeMode = DrawMode.LINE;
                 }
                 isDrawingShape = true;
-                shapeStartPoint = new Point2D(event.getX(), event.getY());
+                double origX = (event.getX() - offsetX) / zoomFactor;
+                double origY = (event.getY() - offsetY) / zoomFactor;
+                shapeStartPoint = new Point2D(origX, origY);
             } else {
                 activeShapeMode = DrawMode.PENCIL;
                 isDrawingShape = false;
                 currentStrokePoints.clear();
-                currentStrokePoints.add(new Point2D(event.getX(), event.getY()));
+                double origX = (event.getX() - offsetX) / zoomFactor;
+                double origY = (event.getY() - offsetY) / zoomFactor;
+                currentStrokePoints.add(new Point2D(origX, origY));
             }
         });
 
         scene.setOnMouseDragged(event -> {
+            double origX = (event.getX() - offsetX) / zoomFactor;
+            double origY = (event.getY() - offsetY) / zoomFactor;
+            Point2D origPoint = new Point2D(origX, origY);
+
             if (isDrawingShape && activeShapeMode != DrawMode.PENCIL) {
                 gcTemporal.clearRect(0, 0, canvasTemporal.getWidth(), canvasTemporal.getHeight());
-                ShapeCommand previewShape = new ShapeCommand(shapeStartPoint, new Point2D(event.getX(), event.getY()),
+                gcTemporal.save();
+                gcTemporal.translate(offsetX, offsetY);
+                gcTemporal.scale(zoomFactor, zoomFactor);
+                ShapeCommand previewShape = new ShapeCommand(shapeStartPoint, origPoint,
                         activeShapeMode, manager.getCurrentColor(), manager.getCurrentLineWidth(),
                         currentCanvasSnapshot);
                 previewShape.execute(gcTemporal);
+                gcTemporal.restore();
             } else if (activeShapeMode == DrawMode.PENCIL) {
-                currentStrokePoints.add(new Point2D(event.getX(), event.getY()));
+                currentStrokePoints.add(origPoint);
                 gcTemporal.clearRect(0, 0, canvasTemporal.getWidth(), canvasTemporal.getHeight());
+                gcTemporal.save();
+                gcTemporal.translate(offsetX, offsetY);
+                gcTemporal.scale(zoomFactor, zoomFactor);
                 PathCommand previewPath = new PathCommand(currentStrokePoints, manager.getCurrentColor(),
                         manager.getCurrentLineWidth());
                 previewPath.execute(gcTemporal);
+                gcTemporal.restore();
             }
         });
 
         scene.setOnMouseReleased(event -> {
+            double origX = (event.getX() - offsetX) / zoomFactor;
+            double origY = (event.getY() - offsetY) / zoomFactor;
+            Point2D origPoint = new Point2D(origX, origY);
+
             if (isDrawingShape && activeShapeMode != DrawMode.PENCIL) {
                 gcTemporal.clearRect(0, 0, canvasTemporal.getWidth(), canvasTemporal.getHeight());
-                ShapeCommand finalShape = new ShapeCommand(shapeStartPoint, new Point2D(event.getX(), event.getY()),
+                ShapeCommand finalShape = new ShapeCommand(shapeStartPoint, origPoint,
                         activeShapeMode, manager.getCurrentColor(), manager.getCurrentLineWidth(),
                         currentCanvasSnapshot);
+                gcPermanent.save();
+                gcPermanent.translate(offsetX, offsetY);
+                gcPermanent.scale(zoomFactor, zoomFactor);
                 commandHistory.execute(finalShape, gcPermanent);
+                gcPermanent.restore();
                 redrawAll();
                 isDrawingShape = false;
                 activeShapeMode = DrawMode.PENCIL;
@@ -391,7 +421,11 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
                 if (currentStrokePoints.size() >= 2) {
                     PathCommand finalPath = new PathCommand(currentStrokePoints, manager.getCurrentColor(),
                             manager.getCurrentLineWidth());
+                    gcPermanent.save();
+                    gcPermanent.translate(offsetX, offsetY);
+                    gcPermanent.scale(zoomFactor, zoomFactor);
                     commandHistory.execute(finalPath, gcPermanent);
+                    gcPermanent.restore();
                     redrawAll();
                 }
                 currentStrokePoints.clear();
@@ -456,18 +490,87 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
 
     private void redrawAll() {
         gcPermanent.clearRect(0, 0, canvasPermanent.getWidth(), canvasPermanent.getHeight());
+        gcPermanent.save();
+        gcPermanent.translate(offsetX, offsetY);
+        gcPermanent.scale(zoomFactor, zoomFactor);
+        gcPermanent.setImageSmoothing(true);
+        
         drawCurrentBackground();
         for (DrawingCommand cmd : commandHistory.getHistory()) {
             cmd.execute(gcPermanent);
         }
+        
+        gcPermanent.restore();
         updateBrushSettings();
+    }
+
+    public void handleZoomScroll(javafx.scene.input.ScrollEvent event) {
+        double deltaY = event.getDeltaY();
+        if (deltaY == 0) return;
+
+        double previousZoomFactor = zoomFactor;
+
+        if (deltaY > 0) {
+            // Zoom in: multiply by 1.2
+            zoomFactor = Math.min(8.0, zoomFactor * 1.2);
+        } else {
+            // Zoom out: divide by 1.2
+            zoomFactor = Math.max(1.0, zoomFactor / 1.2);
+        }
+
+        double mouseX = event.getX();
+        double mouseY = event.getY();
+
+        if (zoomFactor == 1.0) {
+            offsetX = 0.0;
+            offsetY = 0.0;
+        } else {
+            double origX = (mouseX - offsetX) / previousZoomFactor;
+            double origY = (mouseY - offsetY) / previousZoomFactor;
+
+            offsetX = mouseX - origX * zoomFactor;
+            offsetY = mouseY - origY * zoomFactor;
+        }
+
+        redrawAll();
+        if (isTyping) {
+            redrawTextTemporal();
+        }
+    }
+
+    private WritableImage get1xCanvasSnapshot() {
+        Canvas tempCanvas = new Canvas(canvasPermanent.getWidth(), canvasPermanent.getHeight());
+        GraphicsContext tempGc = tempCanvas.getGraphicsContext2D();
+        
+        if (backgroundColorOverride != null) {
+            tempGc.setFill(backgroundColorOverride);
+            tempGc.fillRect(0, 0, tempCanvas.getWidth(), tempCanvas.getHeight());
+        } else {
+            tempGc.setFill(new Color(1, 1, 1, 0.01));
+            tempGc.fillRect(0, 0, tempCanvas.getWidth(), tempCanvas.getHeight());
+            if (background != null) {
+                tempGc.drawImage(background, 0, 0);
+            }
+        }
+        
+        for (DrawingCommand cmd : commandHistory.getHistory()) {
+            cmd.execute(tempGc);
+        }
+        
+        SnapshotParameters paramsCensor = new SnapshotParameters();
+        paramsCensor.setFill(Color.TRANSPARENT);
+        return tempCanvas.snapshot(paramsCensor, null);
     }
 
     private void finishTextCommand() {
         if (currentTextCommand != null) {
             currentTextCommand.setShowCursor(false);
             if (!currentTextCommand.isEmpty()) {
+                gcPermanent.save();
+                gcPermanent.translate(offsetX, offsetY);
+                gcPermanent.scale(zoomFactor, zoomFactor);
                 commandHistory.execute(currentTextCommand, gcPermanent);
+                gcPermanent.restore();
                 redrawAll();
             }
             currentTextCommand = null;
@@ -488,7 +591,11 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
     private void redrawTextTemporal() {
         gcTemporal.clearRect(0, 0, canvasTemporal.getWidth(), canvasTemporal.getHeight());
         if (currentTextCommand != null) {
+            gcTemporal.save();
+            gcTemporal.translate(offsetX, offsetY);
+            gcTemporal.scale(zoomFactor, zoomFactor);
             currentTextCommand.execute(gcTemporal);
+            gcTemporal.restore();
         }
     }
 }

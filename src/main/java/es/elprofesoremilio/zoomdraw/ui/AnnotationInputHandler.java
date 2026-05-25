@@ -49,6 +49,11 @@ public class AnnotationInputHandler {
             manager.setCurrentColor(updatedColor);
             brushSettingsUpdater.updateBrushSettings();
             event.consume();
+        } else {
+            if (brushSettingsUpdater instanceof AnnotationStage) {
+                ((AnnotationStage) brushSettingsUpdater).handleZoomScroll(event);
+                event.consume();
+            }
         }
     }
 

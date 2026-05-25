@@ -60,11 +60,13 @@ public class HelpWindow extends Stage {
             "Color y Grosor del Trazo:\n" +
             "\tR: Rojo | G: Verde | B: Azul | Y: Amarillo | L: Gris claro | D: Gris oscuro\n" +
             "\tC: Cyan | O: Naranja | P: Rosa | M: Magenta | K: Negro | W: Blanco\n" +
-            "\tFlecha Arriba / Abajo (o + / -) o Rueda del ratón: Cambiar grosor\n\n" +
+            "\tFlecha Arriba / Abajo (o + / -) o CTRL + Rueda del ratón: Cambiar grosor\n\n" +
             "Fondo y Opacidad:\n" +
-            "\tFlecha Izq / Der: Cambiar opacidad del trazo\n" +
+            "\tFlecha Izq / Der o SHIFT + Rueda del ratón: Cambiar opacidad del trazo\n" +
             "\tSHIFT + 1-9, 0: Establecer opacidad absoluta (10% - 100%)\n" +
-            "\tCTRL + K: Fondo negro  |  CTRL + W: Fondo blanco"
+            "\tCTRL + K: Fondo negro  |  CTRL + W: Fondo blanco\n\n" +
+            "Zoom (Modo Anotación):\n" +
+            "\tRueda del ratón (sin CTRL/SHIFT): Ampliar / reducir zoom (1x - 8x centrado en el cursor)"
         );
         shortcuts.setFont(Font.font("System", 13.5));
         shortcuts.setTextFill(Color.web("#dfe6e9"));
