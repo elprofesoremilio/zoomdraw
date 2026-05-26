@@ -115,13 +115,13 @@ public class HelpWindow extends Stage {
         Label lblBorderThick = new Label("Grosor del borde:");
         lblBorderThick.setTextFill(Color.web("#b2bec3"));
         lblBorderThick.setFont(Font.font("System", 13));
-        Slider sliderBorderThick = new Slider(1, 30, AppConfig.bortherThickness);
+        Slider sliderBorderThick = new Slider(1, 30, AppConfig.borderThickness);
         sliderBorderThick.setBlockIncrement(1);
-        Label valBorderThick = new Label(AppConfig.bortherThickness + " px");
+        Label valBorderThick = new Label(AppConfig.borderThickness + " px");
         valBorderThick.setTextFill(Color.WHITE);
         valBorderThick.setFont(Font.font("System", FontWeight.BOLD, 13));
         sliderBorderThick.valueProperty().addListener((obs, oldVal, newVal) -> {
-            AppConfig.bortherThickness = newVal.intValue();
+            AppConfig.borderThickness = newVal.intValue();
             valBorderThick.setText(newVal.intValue() + " px");
             manager.requestLaserRedraw();
         });

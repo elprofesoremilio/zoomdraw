@@ -106,7 +106,7 @@ public class AppConfig {
 
     // Laser Pointer Config
     public static Color borderColor = Color.RED;
-    public static int bortherThickness = 7;
+    public static int borderThickness = 7;
     public static double borderOpacity = 0.5;
     public static int circleRadius = 30;
     public static boolean showCross = false;

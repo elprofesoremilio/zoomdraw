@@ -1,6 +1,7 @@
 package es.elprofesoremilio.zoomdraw;
 
 import com.github.kwhat.jnativehook.GlobalScreen;
+import dorkbox.util.CacheUtil;
 import es.elprofesoremilio.zoomdraw.commands.StopAnnotationModeCommand;
 import es.elprofesoremilio.zoomdraw.commands.ToggleAnnotationModeCommand;
 import es.elprofesoremilio.zoomdraw.config.AppConfig;
@@ -35,7 +36,7 @@ public class AppLauncher extends Application {
 
     @Override
     public void start(Stage primaryStage) {
-        // Silenciar logs de JNativeHook
+        // silenciar logs de JNativeHook
         Logger logger = Logger.getLogger(GlobalScreen.class.getPackage().getName());
         logger.setLevel(AppConfig.JNATIVEHOOK_LOG_LEVEL);
         logger.setUseParentHandlers(false);
@@ -90,11 +91,16 @@ public class AppLauncher extends Application {
         try {
 
             PopupMenu popup = new PopupMenu();
+            java.awt.MenuItem helpItem = new java.awt.MenuItem("Ayuda");
+            helpItem.addActionListener(event -> {
+                annotationManager.toggleHelpWindow();
+            });
             java.awt.MenuItem exitItem = new java.awt.MenuItem("Salir");
             exitItem.addActionListener(e -> {
                 Platform.exit();
                 System.exit(0);
             });
+            popup.add(helpItem);
             popup.add(exitItem);
 
             awtTrayIcon = new TrayIcon(trayIcon, "ZoomDraw", popup);
@@ -114,6 +120,11 @@ public class AppLauncher extends Application {
     /** Usa Dorkbox SystemTray para soporte de GTK3/X11 en Linux y otros sistemas. */
     private void initDorkboxSystemTray() {
         try {
+
+            new CacheUtil("ZoomDraw").clear();
+
+            SystemTray.DEBUG = true;
+
             dorkboxSystemTray = SystemTray.get("ZoomDraw");
             if (dorkboxSystemTray != null) {
                 AppLogger.log("Dorkbox SystemTray inicializado.");

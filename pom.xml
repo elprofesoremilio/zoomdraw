@@ -160,7 +160,14 @@
                                     </classPath>
                                     <jre>
                                         <minVersion>21</minVersion>
-                                        <bundbnledJre64Bit>true</bundbnledJre64Bit>
+                                        <bundledJre64Bit>true</bundledJre64Bit>
+                                        <opts>
+                                            <opt>--add-reads=dorkbox.utilities=java.desktop</opt>
+                                            <opt>--add-reads=dorkbox.systemtray=java.desktop</opt>
+                                            <opt>--add-opens=java.desktop/java.awt=ALL-UNNAMED</opt>
+                                            <opt>--add-opens=java.desktop/sun.awt.windows=ALL-UNNAMED</opt>
+                                            <opt>--enable-native-access=ALL-UNNAMED</opt>
+                                        </opts>
                                     </jre>
                                 </configuration>
                             </execution>

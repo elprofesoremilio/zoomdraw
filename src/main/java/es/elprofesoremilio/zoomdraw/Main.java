@@ -11,14 +11,12 @@ import java.nio.channels.FileLock;
  * Entry point for the ZoomDraw application.
  */
 public class Main {
-    private static FileChannel fileChannel;
-    private static FileLock lock;
 
     public static void main(String[] args) {
-        try {
-            File lockFile = new File(System.getProperty("java.io.tmpdir"), "zoomdraw.lock");
-            fileChannel = new RandomAccessFile(lockFile, "rw").getChannel();
-            lock = fileChannel.tryLock();
+        File lockFile = new File(System.getProperty("java.io.tmpdir"), "zoomdraw.lock");
+        try (RandomAccessFile tmpFile = new RandomAccessFile(lockFile, "rw")){
+            FileChannel fileChannel = tmpFile.getChannel();
+            FileLock lock = fileChannel.tryLock();
             if (lock == null) {
                 es.elprofesoremilio.zoomdraw.utils.AppLogger.log("La aplicación ya está en ejecución. Saliendo...");
                 System.exit(0);

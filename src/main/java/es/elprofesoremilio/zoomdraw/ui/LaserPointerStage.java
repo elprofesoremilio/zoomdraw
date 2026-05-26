@@ -63,7 +63,7 @@ public class LaserPointerStage extends Stage {
         );
 
         gc.setStroke(strokeColor);
-        gc.setLineWidth(AppConfig.bortherThickness);
+        gc.setLineWidth(AppConfig.borderThickness);
         gc.strokeOval(centerX - radius, centerY - radius, radius * 2, radius * 2);
 
         // 2. Draw the central cross if active
