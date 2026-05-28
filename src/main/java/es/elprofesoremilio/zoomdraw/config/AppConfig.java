@@ -1,5 +1,6 @@
 package es.elprofesoremilio.zoomdraw.config;
 
+import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent;
 import javafx.scene.input.KeyCode;
 import javafx.scene.paint.Color;
 import javafx.scene.text.FontWeight;
@@ -13,6 +14,10 @@ public class AppConfig {
     public static final String JDK_GTK_VERSION = "3";
     public static final boolean AWT_HEADLESS = false;
     public static final boolean JAVA2D_OPENGL = false;
+
+    // JNativeHook mode keys
+    public static final int ANNOTATION_MODE_KEY = NativeKeyEvent.VC_1;
+    public static final int LASER_MODE_KEY = NativeKeyEvent.VC_2;
 
     // JNativeHook Logger Level
     public static final Level JNATIVEHOOK_LOG_LEVEL = Level.OFF;
@@ -101,6 +106,7 @@ public class AppConfig {
     public static final Color DEFAULT_COLOR = AppConfig.RED;
     public static final double DEFAULT_LINE_WIDTH = 3.0;
     public static final double DEFAULT_OPACITY = 1.0;
+    public static final int HELP_WINDOW_KEY = NativeKeyEvent.VC_0;
 
     public static boolean systemTrayLoaded = false;
 

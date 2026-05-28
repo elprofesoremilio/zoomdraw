@@ -7,10 +7,9 @@ import com.github.kwhat.jnativehook.keyboard.NativeKeyListener;
 import com.github.kwhat.jnativehook.mouse.NativeMouseEvent;
 import com.github.kwhat.jnativehook.mouse.NativeMouseMotionListener;
 import es.elprofesoremilio.zoomdraw.commands.Command;
+import es.elprofesoremilio.zoomdraw.config.AppConfig;
 import es.elprofesoremilio.zoomdraw.core.AnnotationManager;
 import es.elprofesoremilio.zoomdraw.utils.AppLogger;
-
-import java.lang.reflect.Field;
 
 public class GlobalKeyHook implements NativeKeyListener, NativeMouseMotionListener {
 
@@ -52,13 +51,13 @@ public class GlobalKeyHook implements NativeKeyListener, NativeMouseMotionListen
         int keyCode = e.getKeyCode();
 
         // CTRL + 1
-        if (ctrlDown && keyCode == NativeKeyEvent.VC_1) {
+        if (ctrlDown && keyCode == AppConfig.ANNOTATION_MODE_KEY) {
             consumeEvent(e);
             toggleAnnotationModeCommand.execute();
         }
 
         // CTRL + 2 (Modo Láser - solo si no está en modo anotación)
-        if (ctrlDown && keyCode == NativeKeyEvent.VC_2) {
+        if (ctrlDown && keyCode == AppConfig.LASER_MODE_KEY) {
             consumeEvent(e);
             if (!manager.isActive()) {
                 manager.toggleLaserMode();
@@ -66,7 +65,7 @@ public class GlobalKeyHook implements NativeKeyListener, NativeMouseMotionListen
         }
 
         // CTRL + 0
-        if (ctrlDown && keyCode == NativeKeyEvent.VC_0) {
+        if (ctrlDown && keyCode == AppConfig.HELP_WINDOW_KEY) {
             consumeEvent(e);
             manager.toggleHelpWindow();
         }
@@ -78,12 +77,13 @@ public class GlobalKeyHook implements NativeKeyListener, NativeMouseMotionListen
             manager.stopLaserMode();
         }
         // Solo cerrar el modo anotación si:
-        //  - Ningún sub-modo (texto / numeración) está activo, Y
+        //  - Ningún sub-modo (texto / numeración / recorte) está activo, Y
         //  - No se acaba de cancelar un sub-modo (ventana de 300 ms para cubrir la
         //    condición de carrera entre el hilo JNativeHook y el hilo JavaFX en Linux).
         else if (keyCode == NativeKeyEvent.VC_ESCAPE && manager.isActive()
                 && !manager.isTextModeActive()
                 && !manager.isNumberingModeActive()
+                && !manager.isCropModeActive()
                 && !manager.wasSubModeRecentlyCancelled()) {
             consumeEvent(e);
             stopAnnotationModeCommand.execute();

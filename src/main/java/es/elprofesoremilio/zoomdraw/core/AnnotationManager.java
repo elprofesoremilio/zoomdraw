@@ -229,6 +229,10 @@ public class AnnotationManager {
         return currentStage != null && currentStage.isNumberingModeActive();
     }
 
+    public boolean isCropModeActive() {
+        return currentStage != null && currentStage.isCropModeActive();
+    }
+
     /**
      * Called by AnnotationStage when a sub-mode (text or numbering) is cancelled
      * via ESC. Stamps a timestamp so that GlobalKeyHook can suppress the

@@ -77,6 +77,36 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
         return isNumberingModeActive;
     }
 
+    private boolean isCropModeActive = false;
+    private double cropX = 0.0;
+    private double cropY = 0.0;
+    private double cropW = 0.0;
+    private double cropH = 0.0;
+
+    private enum CropAction { CLIPBOARD, SAVE }
+    private CropAction pendingCropAction;
+    private javafx.animation.Timeline marchingAntsTimeline = null;
+    private double dashOffset = 0.0;
+
+    private enum DragType {
+        NONE,
+        MOVE,
+        TOP_LEFT, TOP_CENTER, TOP_RIGHT,
+        RIGHT_CENTER, BOTTOM_RIGHT, BOTTOM_CENTER,
+        BOTTOM_LEFT, LEFT_CENTER
+    }
+    private DragType currentDragType = DragType.NONE;
+    private double dragStartX = 0.0;
+    private double dragStartY = 0.0;
+    private double initialCropX = 0.0;
+    private double initialCropY = 0.0;
+    private double initialCropW = 0.0;
+    private double initialCropH = 0.0;
+
+    public boolean isCropModeActive() {
+        return isCropModeActive;
+    }
+
     public AnnotationStage(AnnotationManager manager, Rectangle2D bounds, WritableImage background) {
         super(StageStyle.TRANSPARENT);
         this.manager = manager;
@@ -148,18 +178,57 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
         inputHandler.attach(scene);
 
         scene.addEventFilter(javafx.scene.input.KeyEvent.KEY_PRESSED, event -> {
+            boolean isCtrl = event.isControlDown();
+            boolean isAlt = event.isAltDown();
+
+            // Atajos de captura y recorte
+            if (isCtrl) {
+                if (isAlt) {
+                    if (event.getCode() == KeyCode.C) {
+                        enterCropMode(CropAction.CLIPBOARD);
+                        event.consume();
+                        return;
+                    } else if (event.getCode() == KeyCode.S) {
+                        enterCropMode(CropAction.SAVE);
+                        event.consume();
+                        return;
+                    }
+                } else {
+                    if (event.getCode() == KeyCode.C) {
+                        captureFull(CropAction.CLIPBOARD);
+                        event.consume();
+                        return;
+                    } else if (event.getCode() == KeyCode.S) {
+                        captureFull(CropAction.SAVE);
+                        event.consume();
+                        return;
+                    }
+                }
+            }
+
+            // Si está activo el modo recorte, consumir todas las teclas
+            if (isCropModeActive) {
+                if (event.getCode() == KeyCode.ESCAPE) {
+                    exitCropMode(true);
+                } else if (event.getCode() == KeyCode.ENTER) {
+                    confirmCrop();
+                }
+                event.consume();
+                return;
+            }
+
             if (isNumberingModeActive) {
-                boolean isCtrl = event.isControlDown();
+                boolean isCtrlKey = event.isControlDown();
                 boolean isShift = event.isShiftDown();
 
                 if (event.getCode() == KeyCode.ESCAPE) {
                     // ESC cancels numbering mode without committing — discard circles, return to annotation
                     cancelNumberingMode();
                     event.consume();
-                } else if (isCtrl && event.getCode() == KeyCode.Z) {
+                } else if (isCtrlKey && event.getCode() == KeyCode.Z) {
                     undoNumbering();
                     event.consume();
-                } else if ((isCtrl && event.getCode() == KeyCode.Y) || (isCtrl && isShift && event.getCode() == KeyCode.Z)) {
+                } else if ((isCtrlKey && event.getCode() == KeyCode.Y) || (isCtrlKey && isShift && event.getCode() == KeyCode.Z)) {
                     redoNumbering();
                     event.consume();
                 } else if (event.getCode() == KeyCode.DELETE || event.getCode() == KeyCode.BACK_SPACE) {
@@ -242,6 +311,10 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
         });
 
         scene.addEventFilter(javafx.scene.input.KeyEvent.KEY_TYPED, event -> {
+            if (isCropModeActive) {
+                event.consume();
+                return;
+            }
             if (isNumberingModeActive) {
                 event.consume();
                 return;
@@ -358,6 +431,24 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
                 this.requestFocus();
             }
             manager.bringHelpWindowToFront();
+
+            if (isCropModeActive) {
+                if (event.getButton() == javafx.scene.input.MouseButton.PRIMARY) {
+                    double mx = event.getX();
+                    double my = event.getY();
+                    currentDragType = getDragType(mx, my);
+                    if (currentDragType != DragType.NONE) {
+                        dragStartX = mx;
+                        dragStartY = my;
+                        initialCropX = cropX;
+                        initialCropY = cropY;
+                        initialCropW = cropW;
+                        initialCropH = cropH;
+                    }
+                }
+                event.consume();
+                return;
+            }
 
             if (isNumberingModeActive) {
                 // Right-click commits the numbering session as a permanent stroke
@@ -487,6 +578,196 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
         });
 
         scene.setOnMouseDragged(event -> {
+            if (isCropModeActive) {
+                if (currentDragType != DragType.NONE) {
+                    double mx = event.getX();
+                    double my = event.getY();
+                    double dx = mx - dragStartX;
+                    double dy = my - dragStartY;
+
+                    double newX = initialCropX;
+                    double newY = initialCropY;
+                    double newW = initialCropW;
+                    double newH = initialCropH;
+
+                    switch (currentDragType) {
+                        case MOVE:
+                            newX = initialCropX + dx;
+                            newY = initialCropY + dy;
+                            break;
+                        case TOP_LEFT:
+                            newX = initialCropX + dx;
+                            newY = initialCropY + dy;
+                            newW = initialCropW - dx;
+                            newH = initialCropH - dy;
+                            break;
+                        case TOP_CENTER:
+                            newY = initialCropY + dy;
+                            newH = initialCropH - dy;
+                            break;
+                        case TOP_RIGHT:
+                            newY = initialCropY + dy;
+                            newW = initialCropW + dx;
+                            newH = initialCropH - dy;
+                            break;
+                        case RIGHT_CENTER:
+                            newW = initialCropW + dx;
+                            break;
+                        case BOTTOM_RIGHT:
+                            newW = initialCropW + dx;
+                            newH = initialCropH + dy;
+                            break;
+                        case BOTTOM_CENTER:
+                            newH = initialCropH + dy;
+                            break;
+                        case BOTTOM_LEFT:
+                            newX = initialCropX + dx;
+                            newW = initialCropW - dx;
+                            newH = initialCropH + dy;
+                            break;
+                        case LEFT_CENTER:
+                            newX = initialCropX + dx;
+                            newW = initialCropW - dx;
+                            break;
+                    }
+
+                    // Min size guard
+                    double minSize = 20.0;
+                    if (newW < minSize) {
+                        if (currentDragType == DragType.TOP_LEFT || currentDragType == DragType.BOTTOM_LEFT || currentDragType == DragType.LEFT_CENTER) {
+                            newX = initialCropX + initialCropW - minSize;
+                        }
+                        newW = minSize;
+                    }
+                    if (newH < minSize) {
+                        if (currentDragType == DragType.TOP_LEFT || currentDragType == DragType.TOP_RIGHT || currentDragType == DragType.TOP_CENTER) {
+                            newY = initialCropY + initialCropH - minSize;
+                        }
+                        newH = minSize;
+                    }
+
+                    // Apply modifiers
+                    boolean isShift = event.isShiftDown();
+                    boolean isCtrl = event.isControlDown();
+
+                    if (currentDragType != DragType.MOVE) {
+                        if (isCtrl) {
+                            // Square constraint: use shorter side
+                            double s = Math.min(newW, newH);
+                            newW = s;
+                            newH = s;
+
+                            // Adjust coordinates based on fixed point
+                            switch (currentDragType) {
+                                case TOP_LEFT:
+                                    newX = (initialCropX + initialCropW) - newW;
+                                    newY = (initialCropY + initialCropH) - newH;
+                                    break;
+                                case TOP_RIGHT:
+                                    newX = initialCropX;
+                                    newY = (initialCropY + initialCropH) - newH;
+                                    break;
+                                case BOTTOM_LEFT:
+                                    newX = (initialCropX + initialCropW) - newW;
+                                    newY = initialCropY;
+                                    break;
+                                case BOTTOM_RIGHT:
+                                    newX = initialCropX;
+                                    newY = initialCropY;
+                                    break;
+                                case TOP_CENTER:
+                                    newY = (initialCropY + initialCropH) - newH;
+                                    newX = initialCropX + (initialCropW - newW) / 2.0;
+                                    break;
+                                case BOTTOM_CENTER:
+                                    newY = initialCropY;
+                                    newX = initialCropX + (initialCropW - newW) / 2.0;
+                                    break;
+                                case LEFT_CENTER:
+                                    newX = (initialCropX + initialCropW) - newW;
+                                    newY = initialCropY + (initialCropH - newH) / 2.0;
+                                    break;
+                                case RIGHT_CENTER:
+                                    newX = initialCropX;
+                                    newY = initialCropY + (initialCropH - newH) / 2.0;
+                                    break;
+                            }
+                        } else if (isShift) {
+                            // Aspect ratio constraint: maintain initial crop aspect ratio
+                            double ratio = initialCropW / initialCropH;
+                            // fit within newW, newH
+                            double scale = Math.min(newW / initialCropW, newH / initialCropH);
+                            newW = scale * initialCropW;
+                            newH = scale * initialCropH;
+
+                            // Adjust coordinates based on fixed point
+                            switch (currentDragType) {
+                                case TOP_LEFT:
+                                    newX = (initialCropX + initialCropW) - newW;
+                                    newY = (initialCropY + initialCropH) - newH;
+                                    break;
+                                case TOP_RIGHT:
+                                    newX = initialCropX;
+                                    newY = (initialCropY + initialCropH) - newH;
+                                    break;
+                                case BOTTOM_LEFT:
+                                    newX = (initialCropX + initialCropW) - newW;
+                                    newY = initialCropY;
+                                    break;
+                                case BOTTOM_RIGHT:
+                                    newX = initialCropX;
+                                    newY = initialCropY;
+                                    break;
+                                case TOP_CENTER:
+                                    newY = (initialCropY + initialCropH) - newH;
+                                    newX = initialCropX + (initialCropW - newW) / 2.0;
+                                    break;
+                                case BOTTOM_CENTER:
+                                    newY = initialCropY;
+                                    newX = initialCropX + (initialCropW - newW) / 2.0;
+                                    break;
+                                case LEFT_CENTER:
+                                    newX = (initialCropX + initialCropW) - newW;
+                                    newY = initialCropY + (initialCropH - newH) / 2.0;
+                                    break;
+                                case RIGHT_CENTER:
+                                    newX = initialCropX;
+                                    newY = initialCropY + (initialCropH - newH) / 2.0;
+                                    break;
+                            }
+                        }
+                    }
+
+                    // Clamp to canvas boundaries
+                    double canvasW = canvasTemporal.getWidth();
+                    double canvasH = canvasTemporal.getHeight();
+
+                    if (currentDragType == DragType.MOVE) {
+                        newX = Math.max(0, Math.min(canvasW - newW, newX));
+                        newY = Math.max(0, Math.min(canvasH - newH, newY));
+                    } else {
+                        double x1 = Math.max(0, newX);
+                        double y1 = Math.max(0, newY);
+                        double x2 = Math.min(canvasW, newX + newW);
+                        double y2 = Math.min(canvasH, newY + newH);
+
+                        newX = x1;
+                        newY = y1;
+                        newW = Math.max(minSize, x2 - x1);
+                        newH = Math.max(minSize, y2 - y1);
+                    }
+
+                    cropX = newX;
+                    cropY = newY;
+                    cropW = newW;
+                    cropH = newH;
+
+                    renderCropOverlay();
+                }
+                event.consume();
+                return;
+            }
+
             if (isNumberingModeActive) {
                 if (selectedCircle != null && dragOffset != null) {
                     double mouseX = event.getX();
@@ -530,6 +811,12 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
         });
 
         scene.setOnMouseReleased(event -> {
+            if (isCropModeActive) {
+                currentDragType = DragType.NONE;
+                event.consume();
+                return;
+            }
+
             if (isNumberingModeActive) {
                 if (selectedCircle != null && dragStartCenter != null) {
                     if (selectedCircle.getCenter().distance(dragStartCenter) < 1.0) {
@@ -582,6 +869,38 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
         });
 
         scene.setOnMouseMoved(event -> {
+            if (isCropModeActive) {
+                double mx = event.getX();
+                double my = event.getY();
+                DragType type = getDragType(mx, my);
+                switch (type) {
+                    case TOP_LEFT:
+                    case BOTTOM_RIGHT:
+                        scene.setCursor(javafx.scene.Cursor.NW_RESIZE);
+                        break;
+                    case TOP_RIGHT:
+                    case BOTTOM_LEFT:
+                        scene.setCursor(javafx.scene.Cursor.NE_RESIZE);
+                        break;
+                    case TOP_CENTER:
+                    case BOTTOM_CENTER:
+                        scene.setCursor(javafx.scene.Cursor.N_RESIZE);
+                        break;
+                    case LEFT_CENTER:
+                    case RIGHT_CENTER:
+                        scene.setCursor(javafx.scene.Cursor.W_RESIZE);
+                        break;
+                    case MOVE:
+                        scene.setCursor(javafx.scene.Cursor.MOVE);
+                        break;
+                    default:
+                        scene.setCursor(javafx.scene.Cursor.DEFAULT);
+                        break;
+                }
+                event.consume();
+                return;
+            }
+
             if (isNumberingModeActive) {
                 handleNumberingMouseMoved(event.getX(), event.getY());
             }
@@ -591,6 +910,18 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
         scene.setOnMouseClicked(event -> {
             if (!this.isFocused()) {
                 this.requestFocus();
+            }
+
+            if (isCropModeActive) {
+                if (event.getButton() == javafx.scene.input.MouseButton.PRIMARY && event.getClickCount() == 2) {
+                    double mx = event.getX();
+                    double my = event.getY();
+                    if (mx >= cropX && mx <= cropX + cropW && my >= cropY && my <= cropY + cropH) {
+                        confirmCrop();
+                    }
+                }
+                event.consume();
+                return;
             }
         });
 
@@ -977,5 +1308,221 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
             currentTextCommand.execute(gcTemporal);
             gcTemporal.restore();
         }
+    }
+
+    private void captureFull(CropAction action) {
+        if (isNumberingModeActive) {
+            gcTemporal.clearRect(0, 0, canvasTemporal.getWidth(), canvasTemporal.getHeight());
+        }
+
+        SnapshotParameters params = new SnapshotParameters();
+        params.setFill(Color.TRANSPARENT);
+        WritableImage image = getScene().getRoot().snapshot(params, null);
+
+        if (isNumberingModeActive) {
+            java.awt.Point cursor = java.awt.MouseInfo.getPointerInfo().getLocation();
+            double mouseX = cursor.x - getX();
+            double mouseY = cursor.y - getY();
+            drawNumberPreview(mouseX, mouseY);
+        }
+
+        if (action == CropAction.CLIPBOARD) {
+            boolean success = es.elprofesoremilio.zoomdraw.utils.CaptureUtils.copyToClipboard(image);
+            if (success) {
+                showFlashEffect();
+            }
+        } else if (action == CropAction.SAVE) {
+            java.io.File file = showSaveDialog();
+            if (file != null) {
+                boolean success = es.elprofesoremilio.zoomdraw.utils.CaptureUtils.saveToFile(image, file);
+                if (success) {
+                    showFlashEffect();
+                }
+            }
+        }
+    }
+
+    private void enterCropMode(CropAction action) {
+        isCropModeActive = true;
+        pendingCropAction = action;
+
+        double canvasW = canvasTemporal.getWidth();
+        double canvasH = canvasTemporal.getHeight();
+        cropW = canvasW / 4.0;
+        cropH = canvasH / 4.0;
+        cropX = (canvasW - cropW) / 2.0;
+        cropY = (canvasH - cropH) / 2.0;
+
+        getScene().setCursor(javafx.scene.Cursor.DEFAULT);
+        startMarchingAnts();
+        renderCropOverlay();
+    }
+
+    private void startMarchingAnts() {
+        if (marchingAntsTimeline != null) {
+            marchingAntsTimeline.stop();
+        }
+        marchingAntsTimeline = new javafx.animation.Timeline(
+            new javafx.animation.KeyFrame(
+                javafx.util.Duration.millis(100),
+                e -> {
+                    dashOffset = (dashOffset + 2.0) % 16.0;
+                    if (isCropModeActive) {
+                        renderCropOverlay();
+                    }
+                }
+            )
+        );
+        marchingAntsTimeline.setCycleCount(javafx.animation.Animation.INDEFINITE);
+        marchingAntsTimeline.play();
+    }
+
+    private void stopMarchingAnts() {
+        if (marchingAntsTimeline != null) {
+            marchingAntsTimeline.stop();
+            marchingAntsTimeline = null;
+        }
+    }
+
+    private void renderCropOverlay() {
+        if (!isCropModeActive) return;
+
+        gcTemporal.clearRect(0, 0, canvasTemporal.getWidth(), canvasTemporal.getHeight());
+
+        // Oscurecer
+        gcTemporal.setFill(new Color(0, 0, 0, 0.6));
+        gcTemporal.fillRect(0, 0, canvasTemporal.getWidth(), canvasTemporal.getHeight());
+
+        // Cutout
+        gcTemporal.clearRect(cropX, cropY, cropW, cropH);
+
+        // Borde azul claro
+        gcTemporal.setStroke(Color.web("#80d8ff"));
+        gcTemporal.setLineWidth(2.0);
+        gcTemporal.setLineDashes((double[]) null);
+        gcTemporal.strokeRect(cropX, cropY, cropW, cropH);
+
+        // Borde blanco dashed
+        gcTemporal.setStroke(Color.WHITE);
+        gcTemporal.setLineDashes(8.0, 8.0);
+        gcTemporal.setLineDashOffset(dashOffset);
+        gcTemporal.strokeRect(cropX, cropY, cropW, cropH);
+
+        // Agarraderas
+        drawHandle(gcTemporal, cropX, cropY);
+        drawHandle(gcTemporal, cropX + cropW, cropY);
+        drawHandle(gcTemporal, cropX, cropY + cropH);
+        drawHandle(gcTemporal, cropX + cropW, cropY + cropH);
+
+        drawHandle(gcTemporal, cropX + cropW / 2.0, cropY);
+        drawHandle(gcTemporal, gcTemporal.getCanvas().getWidth() > 0 ? cropX + cropW / 2.0 : 0, cropY + cropH); // BC anchor
+        drawHandle(gcTemporal, cropX, cropY + cropH / 2.0);
+        drawHandle(gcTemporal, cropX + cropW, cropY + cropH / 2.0);
+    }
+
+    private void drawHandle(GraphicsContext gc, double x, double y) {
+        double size = 8.0;
+        gc.setFill(Color.WHITE);
+        gc.setStroke(Color.web("#0091ea"));
+        gc.setLineWidth(1.5);
+        gc.setLineDashes((double[]) null);
+        gc.fillRect(x - size / 2.0, y - size / 2.0, size, size);
+        gc.strokeRect(x - size / 2.0, y - size / 2.0, size, size);
+    }
+
+    private void exitCropMode(boolean cancelled) {
+        isCropModeActive = false;
+        stopMarchingAnts();
+
+        gcTemporal.clearRect(0, 0, canvasTemporal.getWidth(), canvasTemporal.getHeight());
+        getScene().setCursor(pencilCursor);
+
+        if (cancelled) {
+            manager.notifySubModeCancelled();
+        }
+    }
+
+    private void confirmCrop() {
+        double x = cropX;
+        double y = cropY;
+        double w = cropW;
+        double h = cropH;
+        CropAction action = pendingCropAction;
+
+        exitCropMode(false);
+
+        SnapshotParameters params = new SnapshotParameters();
+        params.setFill(Color.TRANSPARENT);
+        params.setViewport(new Rectangle2D(x, y, w, h));
+
+        WritableImage image = getScene().getRoot().snapshot(params, null);
+
+        if (action == CropAction.CLIPBOARD) {
+            boolean success = es.elprofesoremilio.zoomdraw.utils.CaptureUtils.copyToClipboard(image);
+            if (success) {
+                showFlashEffect();
+            }
+        } else if (action == CropAction.SAVE) {
+            java.io.File file = showSaveDialog();
+            if (file != null) {
+                boolean success = es.elprofesoremilio.zoomdraw.utils.CaptureUtils.saveToFile(image, file);
+                if (success) {
+                    showFlashEffect();
+                }
+            }
+        }
+    }
+
+    public void showFlashEffect() {
+        gcTemporal.save();
+        gcTemporal.setFill(new Color(1, 1, 1, 0.4));
+        gcTemporal.fillRect(0, 0, canvasTemporal.getWidth(), canvasTemporal.getHeight());
+        gcTemporal.restore();
+
+        javafx.animation.PauseTransition pause = new javafx.animation.PauseTransition(javafx.util.Duration.millis(80));
+        pause.setOnFinished(e -> {
+            gcTemporal.clearRect(0, 0, canvasTemporal.getWidth(), canvasTemporal.getHeight());
+            if (isCropModeActive) {
+                renderCropOverlay();
+            }
+        });
+        pause.play();
+    }
+
+    private DragType getDragType(double x, double y) {
+        double hitSize = 12.0;
+
+        if (nearPoint(x, y, cropX, cropY, hitSize)) return DragType.TOP_LEFT;
+        if (nearPoint(x, y, cropX + cropW, cropY, hitSize)) return DragType.TOP_RIGHT;
+        if (nearPoint(x, y, cropX, cropY + cropH, hitSize)) return DragType.BOTTOM_LEFT;
+        if (nearPoint(x, y, cropX + cropW, cropY + cropH, hitSize)) return DragType.BOTTOM_RIGHT;
+
+        if (nearPoint(x, y, cropX + cropW / 2.0, cropY, hitSize)) return DragType.TOP_CENTER;
+        if (nearPoint(x, y, cropX + cropW / 2.0, cropY + cropH, hitSize)) return DragType.BOTTOM_CENTER;
+        if (nearPoint(x, y, cropX, cropY + cropH / 2.0, hitSize)) return DragType.LEFT_CENTER;
+        if (nearPoint(x, y, cropX + cropW, cropY + cropH / 2.0, hitSize)) return DragType.RIGHT_CENTER;
+
+        if (x >= cropX && x <= cropX + cropW && y >= cropY && y <= cropY + cropH) {
+            return DragType.MOVE;
+        }
+
+        return DragType.NONE;
+    }
+
+    private boolean nearPoint(double x1, double y1, double x2, double y2, double hitSize) {
+        return Math.abs(x1 - x2) <= hitSize && Math.abs(y1 - y2) <= hitSize;
+    }
+
+    private java.io.File showSaveDialog() {
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+        java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
+        String defaultName = "anotacion_" + now.format(formatter) + ".png";
+
+        javafx.stage.FileChooser fileChooser = new javafx.stage.FileChooser();
+        fileChooser.setTitle("Guardar captura de anotación");
+        fileChooser.setInitialFileName(defaultName);
+        fileChooser.getExtensionFilters().add(new javafx.stage.FileChooser.ExtensionFilter("Imagen PNG (*.png)", "*.png"));
+
+        return fileChooser.showSaveDialog(this);
     }
 }
