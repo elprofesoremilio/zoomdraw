@@ -64,6 +64,7 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
     private boolean isTextModeActive = false;
     private boolean isTyping = false;
     private TextCommand currentTextCommand = null;
+    private Character pendingAccent = null;
 
     private Color backgroundColorOverride = null;
 
@@ -181,6 +182,42 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
             boolean isCtrl = event.isControlDown();
             boolean isAlt = event.isAltDown();
 
+            if (isTextModeActive) {
+                if (event.getCode() == KeyCode.ESCAPE) {
+                    cancelTextCommand();
+                    event.consume();
+                    return;
+                }
+                if (isTyping) {
+                    if (event.getCode() == KeyCode.BACK_SPACE) {
+                        if (pendingAccent != null) {
+                            pendingAccent = null;
+                        } else {
+                            currentTextCommand.removeLast();
+                            redrawTextTemporal();
+                        }
+                        event.consume();
+                        return;
+                    } else if (event.getCode() == KeyCode.ENTER) {
+                        currentTextCommand.append(es.elprofesoremilio.zoomdraw.core.text.TextTokens.ENTER_TOKEN,
+                                manager.getCurrentColor(), manager.getCurrentLineWidth());
+                        redrawTextTemporal();
+                        event.consume();
+                        return;
+                    } else if (event.getCode() == KeyCode.TAB) {
+                        currentTextCommand.append(es.elprofesoremilio.zoomdraw.core.text.TextTokens.TAB_TOKEN,
+                                manager.getCurrentColor(), manager.getCurrentLineWidth());
+                        redrawTextTemporal();
+                        event.consume();
+                        return;
+                    }
+                }
+                if (isCtrl) {
+                    event.consume();
+                }
+                return;
+            }
+
             // Atajos de captura y recorte
             if (isCtrl) {
                 if (isAlt) {
@@ -258,44 +295,7 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
                 return;
             }
 
-            boolean noSpecialKeys = !event.isControlDown() && !event.isAltDown() && !event.isMetaDown();
-            if (isTyping) {
-                if (event.getCode() == KeyCode.ESCAPE) {
-                    cancelTextCommand();
-                    event.consume();
-                } else if (event.getCode() == KeyCode.BACK_SPACE) {
-                    currentTextCommand.removeLast();
-                    redrawTextTemporal();
-                    event.consume();
-                } else if (event.getCode() == KeyCode.ENTER) {
-                    currentTextCommand.append(es.elprofesoremilio.zoomdraw.core.text.TextTokens.ENTER_TOKEN,
-                            manager.getCurrentColor(), manager.getCurrentLineWidth());
-                    redrawTextTemporal();
-                    event.consume();
-                } else if (event.getCode() == KeyCode.TAB) {
-                    currentTextCommand.append(es.elprofesoremilio.zoomdraw.core.text.TextTokens.TAB_TOKEN,
-                            manager.getCurrentColor(), manager.getCurrentLineWidth());
-                    redrawTextTemporal();
-                    event.consume();
-                } else if (noSpecialKeys) {
-                    // Prevenir que otras teclas se procesen como atajos mientras se escribe
-                }
-            } else if (isTextModeActive) {
-                if (event.getCode() == KeyCode.ESCAPE) {
-                    // ESC only exits text sub-mode; stays in annotation mode
-                    isTextModeActive = false;
-                    activeShapeMode = DrawMode.PENCIL;
-                    scene.setCursor(pencilCursor);
-                    event.consume();
-                    return; // prevent the ESCAPE from propagating to the EXIT handler
-                } else if (noSpecialKeys) {
-                    // En modo texto pero sin escribir, consumimos las teclas de colores y formas
-                    // para que no hagan nada
-                    if (event.getCode().isLetterKey() || event.getCode().isDigitKey()) {
-                        event.consume();
-                    }
-                }
-            } else if (!event.isControlDown() && !event.isAltDown() && !event.isMetaDown() && !event.isShiftDown()) {
+            if (!event.isControlDown() && !event.isAltDown() && !event.isMetaDown() && !event.isShiftDown()) {
                 // Number keys for stroke thickness
                 if (event.getCode() == KeyCode.DIGIT1) { manager.setCurrentLineWidth(AppConfig.LINE_WIDTH_MULTIPLIER); updateBrushSettings(); event.consume(); }
                 else if (event.getCode() == KeyCode.DIGIT2) { manager.setCurrentLineWidth(2.0*AppConfig.LINE_WIDTH_MULTIPLIER); updateBrushSettings(); event.consume(); }
@@ -322,8 +322,33 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
             if (isTyping) {
                 String character = event.getCharacter();
                 if (!character.isEmpty() && character.charAt(0) >= 32 && character.charAt(0) != 127) {
-                    currentTextCommand.append(character, manager.getCurrentColor(), manager.getCurrentLineWidth());
-                    redrawTextTemporal();
+                    char c = character.charAt(0);
+                    if (pendingAccent != null) {
+                        Character combined = combineAccent(pendingAccent, c);
+                        if (combined != null) {
+                            currentTextCommand.append(String.valueOf(combined), manager.getCurrentColor(), manager.getCurrentLineWidth());
+                            pendingAccent = null;
+                        } else {
+                            if (isAccentCharacter(c)) {
+                                currentTextCommand.append(String.valueOf(pendingAccent), manager.getCurrentColor(), manager.getCurrentLineWidth());
+                                pendingAccent = c;
+                            } else if (c == ' ') {
+                                currentTextCommand.append(String.valueOf(pendingAccent), manager.getCurrentColor(), manager.getCurrentLineWidth());
+                                pendingAccent = null;
+                            } else {
+                                currentTextCommand.append(String.valueOf(pendingAccent) + character, manager.getCurrentColor(), manager.getCurrentLineWidth());
+                                pendingAccent = null;
+                            }
+                        }
+                        redrawTextTemporal();
+                    } else {
+                        if (isAccentCharacter(c)) {
+                            pendingAccent = c;
+                        } else {
+                            currentTextCommand.append(character, manager.getCurrentColor(), manager.getCurrentLineWidth());
+                            redrawTextTemporal();
+                        }
+                    }
                 }
                 event.consume();
             } else if (isTextModeActive) {
@@ -333,6 +358,10 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
 
         // Key trackers for shapes
         scene.addEventHandler(javafx.scene.input.KeyEvent.KEY_PRESSED, event -> {
+            if (isTextModeActive) {
+                event.consume();
+                return;
+            }
             if (isNumberingModeActive) {
                 event.consume();
                 return;
@@ -399,6 +428,10 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
         });
 
         scene.addEventHandler(javafx.scene.input.KeyEvent.KEY_RELEASED, event -> {
+            if (isTextModeActive) {
+                event.consume();
+                return;
+            }
             if (isNumberingModeActive) {
                 event.consume();
                 return;
@@ -1273,6 +1306,7 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
     }
 
     private void finishTextCommand() {
+        pendingAccent = null;
         if (currentTextCommand != null) {
             currentTextCommand.setShowCursor(false);
             if (!currentTextCommand.isEmpty()) {
@@ -1292,6 +1326,7 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
 
     private void cancelTextCommand() {
         manager.notifySubModeCancelled(); // stamp BEFORE clearing flags (race guard for GlobalKeyHook)
+        pendingAccent = null;
         currentTextCommand = null;
         isTyping = false;
         isTextModeActive = false;
@@ -1524,5 +1559,80 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
         fileChooser.getExtensionFilters().add(new javafx.stage.FileChooser.ExtensionFilter("Imagen PNG (*.png)", "*.png"));
 
         return fileChooser.showSaveDialog(this);
+    }
+
+    private boolean isAccentCharacter(char c) {
+        return c == '´' || c == '\u00B4' || c == '\u0301' || c == '`' || c == '\u0060' || c == '\u0300'
+                || c == '¨' || c == '\u00A8' || c == '\u0308' || c == '^' || c == '\u005E' || c == '\u0302';
+    }
+
+    private Character combineAccent(char accent, char base) {
+        switch (accent) {
+            case '´':
+            //case '\u00B4':
+            case '\u0301':
+                switch (base) {
+                    case 'a': return 'á';
+                    case 'e': return 'é';
+                    case 'i': return 'í';
+                    case 'o': return 'ó';
+                    case 'u': return 'ú';
+                    case 'A': return 'Á';
+                    case 'E': return 'É';
+                    case 'I': return 'Í';
+                    case 'O': return 'Ó';
+                    case 'U': return 'Ú';
+                }
+                break;
+            case '`':
+            //case '\u0060':
+            case '\u0300':
+                switch (base) {
+                    case 'a': return 'à';
+                    case 'e': return 'è';
+                    case 'i': return 'ì';
+                    case 'o': return 'ò';
+                    case 'u': return 'ù';
+                    case 'A': return 'À';
+                    case 'E': return 'È';
+                    case 'I': return 'Ì';
+                    case 'O': return 'Ò';
+                    case 'U': return 'Ù';
+                }
+                break;
+            case '¨':
+            //case '\u00A8':
+            case '\u0308':
+                switch (base) {
+                    case 'a': return 'ä';
+                    case 'e': return 'ë';
+                    case 'i': return 'ï';
+                    case 'o': return 'ö';
+                    case 'u': return 'ü';
+                    case 'A': return 'Ä';
+                    case 'E': return 'Ë';
+                    case 'I': return 'Ï';
+                    case 'O': return 'Ö';
+                    case 'U': return 'Ü';
+                }
+                break;
+            case '^':
+            //case '\u005E':
+            case '\u0302':
+                switch (base) {
+                    case 'a': return 'â';
+                    case 'e': return 'ê';
+                    case 'i': return 'î';
+                    case 'o': return 'ô';
+                    case 'u': return 'û';
+                    case 'A': return 'Â';
+                    case 'E': return 'Ê';
+                    case 'I': return 'Î';
+                    case 'O': return 'Ô';
+                    case 'U': return 'Û';
+                }
+                break;
+        }
+        return null;
     }
 }
