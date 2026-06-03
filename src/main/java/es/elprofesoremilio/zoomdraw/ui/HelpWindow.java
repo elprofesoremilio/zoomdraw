@@ -251,18 +251,26 @@ public class HelpWindow extends Stage {
             root.getChildren().addAll(tabPane, controlBox);
         }
         
-        // Window dragging logic
-        root.setOnMousePressed(event -> {
-            xOffset = event.getSceneX();
-            yOffset = event.getSceneY();
-        });
-        root.setOnMouseDragged(event -> {
-            setX(event.getScreenX() - xOffset);
-            setY(event.getScreenY() - yOffset);
-        });
-        
         Scene scene = new Scene(root);
         scene.setFill(Color.TRANSPARENT);
+        
+        // Window dragging logic using scene filters to allow dragging from non-interactive components
+        scene.addEventFilter(javafx.scene.input.MouseEvent.MOUSE_PRESSED, event -> {
+            javafx.scene.Node target = (javafx.scene.Node) event.getTarget();
+            if (!isInteractive(target)) {
+                xOffset = event.getSceneX();
+                yOffset = event.getSceneY();
+            } else {
+                xOffset = -1; // Sentinel value to disable dragging
+            }
+        });
+        
+        scene.addEventFilter(javafx.scene.input.MouseEvent.MOUSE_DRAGGED, event -> {
+            if (xOffset != -1) {
+                setX(event.getScreenX() - xOffset);
+                setY(event.getScreenY() - yOffset);
+            }
+        });
         
         // Inject a dark and beautiful flat styling stylesheet for the TabPane
         java.net.URL cssUrl = getClass().getResource("/help_style.css");
@@ -273,4 +281,23 @@ public class HelpWindow extends Stage {
         setScene(scene);
         setAlwaysOnTop(true);
     }
+
+    private boolean isInteractive(javafx.scene.Node node) {
+        javafx.scene.Node parent = node;
+        while (parent != null) {
+            if (parent instanceof Button || parent instanceof Slider || parent instanceof CheckBox || 
+                parent instanceof ColorPicker || parent instanceof ScrollBar || parent instanceof ScrollPane) {
+                return true;
+            }
+            for (String styleClass : parent.getStyleClass()) {
+                if (styleClass.equals("tab") || styleClass.equals("tab-header-area") || 
+                    styleClass.equals("tab-container") || styleClass.equals("tab-header-background")) {
+                    return true;
+                }
+            }
+            parent = parent.getParent();
+        }
+        return false;
+    }
 }
+

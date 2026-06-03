@@ -119,6 +119,12 @@ public class AppConfig {
     public static Color crossColor = Color.WHITE;
     public static int crossThickness = 1;
 
+    // Numbering Mode Config
+    public static double NUMBERING_CIRCLE_RADIUS_MIN = 10.0;
+    public static double NUMBERING_CIRCLE_RADIUS_MULTIPLIER = 2.0;
+
+
+    public static final boolean isLinux = System.getProperty("os.name").toLowerCase().contains("linux");
 
     public static void loadSystemProperties() {
         System.setProperty("sun.java2d.uiScale", UI_SCALE);

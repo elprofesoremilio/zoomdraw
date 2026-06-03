@@ -4,6 +4,7 @@ import es.elprofesoremilio.zoomdraw.commands.*;
 import es.elprofesoremilio.zoomdraw.config.AppConfig;
 import es.elprofesoremilio.zoomdraw.core.AnnotationManager;
 import es.elprofesoremilio.zoomdraw.core.DrawMode;
+import javafx.scene.control.TextField;
 import javafx.geometry.Point2D;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
@@ -32,6 +33,7 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
     private final GraphicsContext gcPermanent;
     private final Canvas canvasTemporal;
     private final GraphicsContext gcTemporal;
+    private final TextField hiddenTextField; // <--- NUEVA VARIABLE
 
     private final List<Point2D> currentStrokePoints = new ArrayList<>();
     private final CommandHistory commandHistory;
@@ -64,7 +66,6 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
     private boolean isTextModeActive = false;
     private boolean isTyping = false;
     private TextCommand currentTextCommand = null;
-    private Character pendingAccent = null;
 
     private Color backgroundColorOverride = null;
 
@@ -122,6 +123,13 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
         // Initialize temporal canvas
         canvasTemporal = new Canvas(bounds.getWidth(), bounds.getHeight());
         gcTemporal = canvasTemporal.getGraphicsContext2D();
+        // --- NUEVO: Configuración del TextField oculto para soporte de acentos en Linux ---
+        hiddenTextField = new TextField();
+        hiddenTextField.setOpacity(0);             // Totalmente invisible
+        hiddenTextField.setPrefSize(1, 1);         // Tamaño minúsculo
+        hiddenTextField.setMaxSize(1, 1);
+        hiddenTextField.setFocusTraversable(false); // Evita que interfiera con el tabulador normal
+        // ----------------------------------------------------------------------------------
 
         // Create pencil cursor
         Canvas cursorCanvas = new Canvas(32, 32);
@@ -169,7 +177,7 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
         // Dibuja el historial sobre el fondo
         redrawAll();
 
-        StackPane root = new StackPane(canvasPermanent, canvasTemporal);
+        StackPane root = new StackPane(canvasPermanent, canvasTemporal, hiddenTextField);
         root.setBackground(null);
         Scene scene = new Scene(root, bounds.getWidth(), bounds.getHeight(), Color.TRANSPARENT);
 
@@ -190,12 +198,8 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
                 }
                 if (isTyping) {
                     if (event.getCode() == KeyCode.BACK_SPACE) {
-                        if (pendingAccent != null) {
-                            pendingAccent = null;
-                        } else {
-                            currentTextCommand.removeLast();
-                            redrawTextTemporal();
-                        }
+                        currentTextCommand.removeLast();
+                        redrawTextTemporal();
                         event.consume();
                         return;
                     } else if (event.getCode() == KeyCode.ENTER) {
@@ -287,6 +291,7 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
                 if (isTextModeActive) {
                     scene.setCursor(javafx.scene.Cursor.TEXT);
                     activeShapeMode = DrawMode.TEXT;
+                    hiddenTextField.requestFocus(); // <--- NUEVA LÍNEA: Despierta el Input Method de Linux
                 } else {
                     scene.setCursor(pencilCursor);
                     activeShapeMode = DrawMode.PENCIL;
@@ -319,35 +324,17 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
                 event.consume();
                 return;
             }
+            if (event.isControlDown() || event.isMetaDown()) {
+                event.consume();
+                return;
+            }
             if (isTyping) {
                 String character = event.getCharacter();
-                if (!character.isEmpty() && character.charAt(0) >= 32 && character.charAt(0) != 127) {
+                if (!character.isEmpty()) {
                     char c = character.charAt(0);
-                    if (pendingAccent != null) {
-                        Character combined = combineAccent(pendingAccent, c);
-                        if (combined != null) {
-                            currentTextCommand.append(String.valueOf(combined), manager.getCurrentColor(), manager.getCurrentLineWidth());
-                            pendingAccent = null;
-                        } else {
-                            if (isAccentCharacter(c)) {
-                                currentTextCommand.append(String.valueOf(pendingAccent), manager.getCurrentColor(), manager.getCurrentLineWidth());
-                                pendingAccent = c;
-                            } else if (c == ' ') {
-                                currentTextCommand.append(String.valueOf(pendingAccent), manager.getCurrentColor(), manager.getCurrentLineWidth());
-                                pendingAccent = null;
-                            } else {
-                                currentTextCommand.append(String.valueOf(pendingAccent) + character, manager.getCurrentColor(), manager.getCurrentLineWidth());
-                                pendingAccent = null;
-                            }
-                        }
+                    if (!Character.isISOControl(c)) {
+                        currentTextCommand.append(character, manager.getCurrentColor(), manager.getCurrentLineWidth());
                         redrawTextTemporal();
-                    } else {
-                        if (isAccentCharacter(c)) {
-                            pendingAccent = c;
-                        } else {
-                            currentTextCommand.append(character, manager.getCurrentColor(), manager.getCurrentLineWidth());
-                            redrawTextTemporal();
-                        }
                     }
                 }
                 event.consume();
@@ -356,10 +343,27 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
             }
         });
 
+        // === NUEVO: CAPTURA DE ACENTOS Y CARACTERES COMPUESTOS EN LINUX ===
+        scene.addEventFilter(javafx.scene.input.InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, event -> {
+            if (isCropModeActive || isNumberingModeActive) {
+                event.consume();
+                return;
+            }
+            if (isTextModeActive && isTyping) {
+                String committed = event.getCommitted();
+                if (committed != null && !committed.isEmpty()) {
+                    // Insertamos el carácter acentuado (á, é, í, ó, ú, ñ, etc.)
+                    currentTextCommand.append(committed, manager.getCurrentColor(), manager.getCurrentLineWidth());
+                    redrawTextTemporal();
+                }
+                event.consume();
+            }
+        });
+
+
         // Key trackers for shapes
         scene.addEventHandler(javafx.scene.input.KeyEvent.KEY_PRESSED, event -> {
             if (isTextModeActive) {
-                event.consume();
                 return;
             }
             if (isNumberingModeActive) {
@@ -499,7 +503,7 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
                     NumberedCircle clicked = null;
                     double margin = 10.0;
                     for (NumberedCircle c : temporalCircles) {
-                        double c_radius = Math.max(18, c.getLineWidth() * 2.0);
+                        double c_radius = Math.max(AppConfig.NUMBERING_CIRCLE_RADIUS_MIN, c.getLineWidth() * AppConfig.NUMBERING_CIRCLE_RADIUS_MULTIPLIER);
                         double dist = Math.hypot(cursorX_orig - c.getCenter().getX(), cursorY_orig - c.getCenter().getY());
                         if (dist <= c_radius + margin) {
                             clicked = c;
@@ -519,7 +523,7 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
                         } else {
                             if (!isPreviewSuperposed(mouseX, mouseY)) {
                                 pushNumberingUndoState();
-                                double radius = Math.max(18, manager.getCurrentLineWidth() * 2.0);
+                                double radius = Math.max(AppConfig.NUMBERING_CIRCLE_RADIUS_MIN, manager.getCurrentLineWidth() * AppConfig.NUMBERING_CIRCLE_RADIUS_MULTIPLIER);
                                 double previewX_orig = (mouseX - offsetX) / zoomFactor;
                                 double previewY_orig = (mouseY - offsetY) / zoomFactor - radius;
                                 
@@ -547,7 +551,7 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
                     isTextModeActive = false;
                     activeShapeMode = DrawMode.PENCIL;
                     this.getScene().setCursor(pencilCursor);
-                    return; // Do not trigger other tools and do not start a new text block
+                    return;
                 }
                 if (event.getButton() == javafx.scene.input.MouseButton.PRIMARY) {
                     isTyping = true;
@@ -556,9 +560,12 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
                     currentTextCommand = new TextCommand(new Point2D(origX, origY),
                             manager.getCurrentColor(), manager.getCurrentLineWidth());
                     scene.setCursor(javafx.scene.Cursor.NONE);
+
+                    hiddenTextField.requestFocus(); // <--- NUEVA LÍNEA: Asegura el foco al hacer clic
+
                     redrawTextTemporal();
                 }
-                return; // Do not trigger other tools
+                return;
             }
 
             boolean isCtrl = event.isControlDown();
@@ -1070,27 +1077,27 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
     }
 
     private WritableImage get1xCanvasSnapshot() {
-        Canvas tempCanvas = new Canvas(canvasPermanent.getWidth(), canvasPermanent.getHeight());
-        GraphicsContext tempGc = tempCanvas.getGraphicsContext2D();
+        double savedZoom = zoomFactor;
+        double savedOffsetX = offsetX;
+        double savedOffsetY = offsetY;
         
-        if (backgroundColorOverride != null) {
-            tempGc.setFill(backgroundColorOverride);
-            tempGc.fillRect(0, 0, tempCanvas.getWidth(), tempCanvas.getHeight());
-        } else {
-            tempGc.setFill(new Color(1, 1, 1, 0.01));
-            tempGc.fillRect(0, 0, tempCanvas.getWidth(), tempCanvas.getHeight());
-            if (background != null) {
-                tempGc.drawImage(background, 0, 0);
-            }
-        }
+        zoomFactor = 1.0;
+        offsetX = 0.0;
+        offsetY = 0.0;
         
-        for (DrawingCommand cmd : commandHistory.getHistory()) {
-            cmd.execute(tempGc);
-        }
+        redrawAll();
         
         SnapshotParameters paramsCensor = new SnapshotParameters();
         paramsCensor.setFill(Color.TRANSPARENT);
-        return tempCanvas.snapshot(paramsCensor, null);
+        WritableImage snapshot = canvasPermanent.snapshot(paramsCensor, null);
+        
+        zoomFactor = savedZoom;
+        offsetX = savedOffsetX;
+        offsetY = savedOffsetY;
+        
+        redrawAll();
+        
+        return snapshot;
     }
 
     private void enterNumberingMode() {
@@ -1210,7 +1217,7 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
     }
 
     private void handleNumberingMouseMoved(double mouseX, double mouseY) {
-        double radius = Math.max(18, manager.getCurrentLineWidth() * 2.0);
+        double radius = Math.max(AppConfig.NUMBERING_CIRCLE_RADIUS_MIN, manager.getCurrentLineWidth() * AppConfig.NUMBERING_CIRCLE_RADIUS_MULTIPLIER);
         double previewX_orig = (mouseX - offsetX) / zoomFactor;
         double previewY_orig = (mouseY - offsetY) / zoomFactor - radius;
 
@@ -1221,7 +1228,7 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
 
         // 1. Direct Hover check
         for (NumberedCircle c : temporalCircles) {
-            double c_radius = Math.max(18, c.getLineWidth() * 2.0);
+            double c_radius = Math.max(AppConfig.NUMBERING_CIRCLE_RADIUS_MIN, c.getLineWidth() * AppConfig.NUMBERING_CIRCLE_RADIUS_MULTIPLIER);
             double dist = Math.hypot(cursorX_orig - c.getCenter().getX(), cursorY_orig - c.getCenter().getY());
             if (dist <= c_radius + margin) {
                 nextHovered = c;
@@ -1232,7 +1239,7 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
         // 2. Superposition check
         if (nextHovered == null) {
             for (NumberedCircle c : temporalCircles) {
-                double c_radius = Math.max(18, c.getLineWidth() * 2.0);
+                double c_radius = Math.max(AppConfig.NUMBERING_CIRCLE_RADIUS_MIN, c.getLineWidth() * AppConfig.NUMBERING_CIRCLE_RADIUS_MULTIPLIER);
                 double dist = Math.hypot(previewX_orig - c.getCenter().getX(), previewY_orig - c.getCenter().getY());
                 if (dist < radius + c_radius) {
                     nextHovered = c;
@@ -1264,7 +1271,7 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
         double previewOpacity = opacity * 0.5;
         Color previewColor = new Color(brushColor.getRed(), brushColor.getGreen(), brushColor.getBlue(), previewOpacity);
 
-        double radius = Math.max(18, lineWidth * 2.0);
+        double radius = Math.max(AppConfig.NUMBERING_CIRCLE_RADIUS_MIN, lineWidth * AppConfig.NUMBERING_CIRCLE_RADIUS_MULTIPLIER);
         double previewX_orig = (mouseX - offsetX) / zoomFactor;
         double previewY_orig = (mouseY - offsetY) / zoomFactor - radius;
 
@@ -1291,12 +1298,12 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
     }
 
     private boolean isPreviewSuperposed(double mouseX, double mouseY) {
-        double radius = Math.max(18, manager.getCurrentLineWidth() * 2.0);
+        double radius = Math.max(AppConfig.NUMBERING_CIRCLE_RADIUS_MIN, manager.getCurrentLineWidth() * AppConfig.NUMBERING_CIRCLE_RADIUS_MULTIPLIER);
         double previewX_orig = (mouseX - offsetX) / zoomFactor;
         double previewY_orig = (mouseY - offsetY) / zoomFactor - radius;
 
         for (NumberedCircle c : temporalCircles) {
-            double c_radius = Math.max(18, c.getLineWidth() * 2.0);
+            double c_radius = Math.max(AppConfig.NUMBERING_CIRCLE_RADIUS_MIN, c.getLineWidth() * AppConfig.NUMBERING_CIRCLE_RADIUS_MULTIPLIER);
             double dist = Math.hypot(previewX_orig - c.getCenter().getX(), previewY_orig - c.getCenter().getY());
             if (dist < radius + c_radius) {
                 return true;
@@ -1306,7 +1313,6 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
     }
 
     private void finishTextCommand() {
-        pendingAccent = null;
         if (currentTextCommand != null) {
             currentTextCommand.setShowCursor(false);
             if (!currentTextCommand.isEmpty()) {
@@ -1326,7 +1332,6 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
 
     private void cancelTextCommand() {
         manager.notifySubModeCancelled(); // stamp BEFORE clearing flags (race guard for GlobalKeyHook)
-        pendingAccent = null;
         currentTextCommand = null;
         isTyping = false;
         isTextModeActive = false;
@@ -1561,78 +1566,4 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
         return fileChooser.showSaveDialog(this);
     }
 
-    private boolean isAccentCharacter(char c) {
-        return c == '´' || c == '\u00B4' || c == '\u0301' || c == '`' || c == '\u0060' || c == '\u0300'
-                || c == '¨' || c == '\u00A8' || c == '\u0308' || c == '^' || c == '\u005E' || c == '\u0302';
-    }
-
-    private Character combineAccent(char accent, char base) {
-        switch (accent) {
-            case '´':
-            //case '\u00B4':
-            case '\u0301':
-                switch (base) {
-                    case 'a': return 'á';
-                    case 'e': return 'é';
-                    case 'i': return 'í';
-                    case 'o': return 'ó';
-                    case 'u': return 'ú';
-                    case 'A': return 'Á';
-                    case 'E': return 'É';
-                    case 'I': return 'Í';
-                    case 'O': return 'Ó';
-                    case 'U': return 'Ú';
-                }
-                break;
-            case '`':
-            //case '\u0060':
-            case '\u0300':
-                switch (base) {
-                    case 'a': return 'à';
-                    case 'e': return 'è';
-                    case 'i': return 'ì';
-                    case 'o': return 'ò';
-                    case 'u': return 'ù';
-                    case 'A': return 'À';
-                    case 'E': return 'È';
-                    case 'I': return 'Ì';
-                    case 'O': return 'Ò';
-                    case 'U': return 'Ù';
-                }
-                break;
-            case '¨':
-            //case '\u00A8':
-            case '\u0308':
-                switch (base) {
-                    case 'a': return 'ä';
-                    case 'e': return 'ë';
-                    case 'i': return 'ï';
-                    case 'o': return 'ö';
-                    case 'u': return 'ü';
-                    case 'A': return 'Ä';
-                    case 'E': return 'Ë';
-                    case 'I': return 'Ï';
-                    case 'O': return 'Ö';
-                    case 'U': return 'Ü';
-                }
-                break;
-            case '^':
-            //case '\u005E':
-            case '\u0302':
-                switch (base) {
-                    case 'a': return 'â';
-                    case 'e': return 'ê';
-                    case 'i': return 'î';
-                    case 'o': return 'ô';
-                    case 'u': return 'û';
-                    case 'A': return 'Â';
-                    case 'E': return 'Ê';
-                    case 'I': return 'Î';
-                    case 'O': return 'Ô';
-                    case 'U': return 'Û';
-                }
-                break;
-        }
-        return null;
-    }
 }

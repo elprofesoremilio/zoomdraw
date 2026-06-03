@@ -1,5 +1,6 @@
 package es.elprofesoremilio.zoomdraw.commands;
 
+import es.elprofesoremilio.zoomdraw.config.AppConfig;
 import javafx.geometry.Point2D;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
@@ -56,7 +57,7 @@ public class NumberedCircle {
     }
 
     public void draw(GraphicsContext gc) {
-        double radius = Math.max(18, lineWidth * 2.0);
+        double radius = Math.max(AppConfig.NUMBERING_CIRCLE_RADIUS_MIN, lineWidth * AppConfig.NUMBERING_CIRCLE_RADIUS_MULTIPLIER);
         gc.save();
         
         // 1. Draw the filled circle using circle color
@@ -80,7 +81,7 @@ public class NumberedCircle {
     }
 
     public void drawSelection(GraphicsContext gc) {
-        double radius = Math.max(18, lineWidth * 2.0);
+        double radius = Math.max(AppConfig.NUMBERING_CIRCLE_RADIUS_MIN, lineWidth * AppConfig.NUMBERING_CIRCLE_RADIUS_MULTIPLIER);
         gc.save();
         
         double luminance = 0.299 * color.getRed() + 0.587 * color.getGreen() + 0.114 * color.getBlue();
@@ -94,7 +95,7 @@ public class NumberedCircle {
     }
 
     public void drawHoverHalo(GraphicsContext gc) {
-        double radius = Math.max(18, lineWidth * 2.0);
+        double radius = Math.max(AppConfig.NUMBERING_CIRCLE_RADIUS_MIN, lineWidth * AppConfig.NUMBERING_CIRCLE_RADIUS_MULTIPLIER);
         gc.save();
         
         gc.setFill(new Color(1.0, 1.0, 1.0, 0.4));
