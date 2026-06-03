@@ -1,0 +1,78 @@
+#!/bin/sh
+set -e
+
+case "$1" in
+    configure)
+        # 1. Creamos el directorio interno para nuestro 'ps' de imitación
+        mkdir -p /opt/zoomdraw/bin/mock
+        cat << 'EOF' > /opt/zoomdraw/bin/mock/ps
+#!/bin/bash
+echo "  PID TTY      STAT   TIME COMMAND"
+echo " 2306 tty2     Sl+    0:00 /usr/libexec/gnome-session-binary"
+EOF
+        chmod +x /opt/zoomdraw/bin/mock/ps
+
+        # 2. Envolvemos el binario nativo generado por jpackage con nuestro PATH modificado
+        if [ -f /opt/zoomdraw/bin/ZoomDraw ] && [ ! -f /opt/zoomdraw/bin/ZoomDraw.real ]; then
+            mv /opt/zoomdraw/bin/ZoomDraw /opt/zoomdraw/bin/ZoomDraw.real
+            cat << 'EOF' > /opt/zoomdraw/bin/ZoomDraw
+#!/bin/bash
+export PATH=/opt/zoomdraw/bin/mock:$PATH
+exec /opt/zoomdraw/bin/ZoomDraw.real "$@"
+EOF
+            chmod +x /opt/zoomdraw/bin/ZoomDraw
+        fi
+
+        # 3. Creamos un enlace simbólico para que el binario real encuentre su configuración
+        if [ -f /opt/zoomdraw/lib/app/ZoomDraw.cfg ]; then
+            ln -sf /opt/zoomdraw/lib/app/ZoomDraw.cfg /opt/zoomdraw/lib/app/ZoomDraw.real.cfg
+        fi
+
+        # 4. Creamos los enlaces en /usr/bin para ejecución global en terminal
+        ln -sf /opt/zoomdraw/bin/ZoomDraw /usr/bin/ZoomDraw
+        ln -sf /opt/zoomdraw/bin/zoomdraw /usr/bin/zoomdraw
+
+        # 5. CREACIÓN AUTOMÁTICA DEL ICONO (.SVG) REPRODUCIENDO TU CÓDIGO JAVA
+        # Se genera directamente en /opt/zoomdraw/ de forma limpia
+        cat << 'EOF' > /opt/zoomdraw/zoomdraw.svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="256" height="256">
+  <text x="1" y="10" font-family="sans-serif" font-weight="bold" font-size="10" fill="#74b9ff">Z</text>
+  <text x="7" y="15" font-family="sans-serif" font-weight="bold" font-size="10" fill="#ffeaa7">D</text>
+</svg>
+EOF
+        chmod 644 /opt/zoomdraw/zoomdraw.svg
+
+        # 6. LIMPIEZA DE LANZADORES PREVIOS Y CREACIÓN DEL NUEVO ACCESO DIRECTO
+        rm -f /usr/share/applications/ZoomDraw.desktop
+        rm -f /usr/share/applications/zoomdraw.desktop
+
+        cat << 'EOF' > /usr/share/applications/zoomdraw.desktop
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=ZoomDraw
+Comment=ZoomDraw Application
+Exec=/opt/zoomdraw/bin/ZoomDraw
+Icon=/opt/zoomdraw/zoomdraw.svg
+Terminal=false
+Categories=Utility;Application;
+StartupNotify=true
+EOF
+        chmod 644 /usr/share/applications/zoomdraw.desktop
+
+        # 7. Forzamos la actualización de la base de datos de aplicaciones de Gnome
+        if [ -x /usr/bin/update-desktop-database ]; then
+            update-desktop-database -q /usr/share/applications || true
+        fi
+    ;;
+
+    abort-upgrade|abort-remove|abort-deconfigure)
+    ;;
+
+    *)
+        echo "postinst llamado con un argumento desconocido \`$1'" >&2
+        exit 1
+    ;;
+esac
+
+exit 0

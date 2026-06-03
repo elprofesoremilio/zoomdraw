@@ -197,7 +197,7 @@
                                 <goals><goal>jpackage</goal></goals>
                                 <configuration>
                                     <name>ZoomDraw</name>
-                                    <vendor>El Profesor Emilio</vendor>
+                                    <vendor>elProfesorEmilio</vendor>
                                     <appVersion>0.6.0</appVersion>
                                     <destination>${project.build.directory}/dist</destination>
                                     <input>${project.build.directory}</input>
@@ -213,6 +213,7 @@
                                     <linuxShortcut>true</linuxShortcut>
                                     <linuxMenuGroup>Utility</linuxMenuGroup>
                                     <linuxDebMaintainer>emilio@elprofesoremilio.es</linuxDebMaintainer>
+                                    <resourceDir>${project.basedir}/src/main/resources/linux-deb</resourceDir>
                                 </configuration>
                             </execution>
                         </executions>

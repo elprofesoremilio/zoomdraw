@@ -1,0 +1,41 @@
+#!/bin/sh
+set -e
+
+case "$1" in
+    remove|deconfigure|upgrade)
+        # 1. Eliminamos los lanzadores del menú instalados
+        rm -f /usr/share/applications/zoomdraw.desktop
+        rm -f /usr/share/applications/ZoomDraw.desktop
+
+        # 2. Eliminamos los enlaces globales del sistema en /usr/bin
+        rm -f /usr/bin/ZoomDraw /usr/bin/zoomdraw
+
+        # 3. Restauramos el binario original si estaba envuelto
+        if [ -f /opt/zoomdraw/bin/ZoomDraw.real ]; then
+            rm -f /opt/zoomdraw/bin/ZoomDraw
+            mv /opt/zoomdraw/bin/ZoomDraw.real /opt/zoomdraw/bin/ZoomDraw
+        fi
+
+        # 4. Eliminamos el enlace simbólico del archivo de configuración
+        rm -f /opt/zoomdraw/lib/app/ZoomDraw.real.cfg
+
+        # 5. Eliminamos nuestra carpeta mock y el icono SVG generado
+        rm -rf /opt/zoomdraw/bin/mock
+        rm -f /opt/zoomdraw/zoomdraw.svg
+
+        # 6. Actualizamos los menús tras la desinstalación
+        if [ -x /usr/bin/update-desktop-database ]; then
+            update-desktop-database -q /usr/share/applications || true
+        fi
+    ;;
+
+    failed-upgrade)
+    ;;
+
+    *)
+        echo "prerm llamado con un argumento desconocido \`$1'" >&2
+        exit 1
+    ;;
+esac
+
+exit 0
