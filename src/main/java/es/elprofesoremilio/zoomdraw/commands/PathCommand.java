@@ -36,4 +36,16 @@ public class PathCommand implements DrawingCommand {
         }
         gc.stroke();
     }
+
+    public List<Point2D> getPoints() {
+        return points;
+    }
+
+    public Color getColor() {
+        return color;
+    }
+
+    public double getLineWidth() {
+        return lineWidth;
+    }
 }

@@ -123,6 +123,12 @@ public class AppConfig {
     public static double NUMBERING_CIRCLE_RADIUS_MIN = 10.0;
     public static double NUMBERING_CIRCLE_RADIUS_MULTIPLIER = 2.0;
 
+    // Eraser Tool Config
+    public static final double ERASER_RADIUS_MIN = 5.0;
+    public static final double ERASER_RADIUS_MAX = 100.0;
+    public static final double ERASER_RADIUS_STEP = 2.0;
+    public static final double ERASER_RADIUS_DEFAULT = 20.0;
+
 
     public static final boolean isLinux = System.getProperty("os.name").toLowerCase().contains("linux");
 

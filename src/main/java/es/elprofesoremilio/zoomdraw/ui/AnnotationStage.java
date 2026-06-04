@@ -41,6 +41,7 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
     private final DrawingController drawingController;
     private final TextToolController textToolController;
     private final NumberingToolController numberingToolController;
+    private final EraserToolController eraserToolController;
     private final CropToolController cropToolController;
     private final CaptureController captureController;
     private final InputDispatcher inputDispatcher;
@@ -112,6 +113,7 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
         this.drawingController = new DrawingController(this, canvasPermanent, canvasTemporal, zoomPanController, commandHistory, manager);
         this.textToolController = new TextToolController(this, canvasPermanent, canvasTemporal, hiddenTextField, zoomPanController, commandHistory, manager);
         this.numberingToolController = new NumberingToolController(this, canvasPermanent, canvasTemporal, zoomPanController, commandHistory, manager);
+        this.eraserToolController = new EraserToolController(this, canvasPermanent, canvasTemporal, zoomPanController, commandHistory, manager);
         this.captureController = new CaptureController(this, canvasTemporal, manager);
         this.cropToolController = new CropToolController(this, canvasTemporal, captureController);
 
@@ -121,6 +123,7 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
                 drawingController,
                 textToolController,
                 numberingToolController,
+                eraserToolController,
                 cropToolController,
                 captureController,
                 manager,
@@ -287,6 +290,10 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
         return captureController;
     }
 
+    public EraserToolController getEraserToolController() {
+        return eraserToolController;
+    }
+
     // Submode queries for AnnotationManager
     public boolean isTextModeActive() {
         return textToolController != null && textToolController.isActive();
@@ -294,6 +301,10 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
 
     public boolean isNumberingModeActive() {
         return numberingToolController != null && numberingToolController.isActive();
+    }
+
+    public boolean isEraserModeActive() {
+        return eraserToolController != null && eraserToolController.isActive();
     }
 
     public boolean isCropModeActive() {

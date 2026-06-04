@@ -47,11 +47,12 @@ public class HelpWindow extends Stage {
             "CTRL + 1: Activar/desactivar modo anotación\n" +
             "CTRL + 2: Activar/desactivar modo puntero láser (desde inactivo)\n" +
             "CTRL + 0: Mostrar/Ocultar esta ventana de ayuda\n" +
-            "ESC: Salir de modo anotación / puntero láser / texto\n\n" +
+            "ESC: Salir de modo anotación / puntero láser / texto / borrador\n\n" +
             "Dibujo y Herramientas (Modo Anotación):\n" +
             "\tClick Izquierdo: Dibujar trazo libre / colocar texto\n" +
             "\tCTRL + Z: Deshacer  |  CTRL + Y: Rehacer\n" +
-            "\tE: Borrar lienzo completo  |  T: Modo Texto  |  N: Modo Numeración Automática\n\n" +
+            "\tE: Borrar lienzo completo  |  T: Modo Texto  |  N: Modo Numeración Automática\n" +
+            "\tCTRL + D: Modo Borrador (CTRL + Rueda: cambiar radio)\n\n" +
             "Modo Numeración Automática (N):\n" +
             "\tClick Izq en vacío: Insertar número secuencial (1, 2, 3...)\n" +
             "\tArrastrar número: Mover número libremente\n" +

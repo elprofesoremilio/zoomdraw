@@ -2,6 +2,7 @@ package es.elprofesoremilio.zoomdraw.commands;
 
 import javafx.scene.canvas.GraphicsContext;
 import java.util.Stack;
+import java.util.List;
 
 public class CommandHistory {
     private final Stack<DrawingCommand> undoStack = new Stack<>();
@@ -23,16 +24,29 @@ public class CommandHistory {
 
     public void undo(Runnable redrawCallback) {
         if (canUndo()) {
-            redoStack.push(undoStack.pop());
+            DrawingCommand cmd = undoStack.pop();
+            if (cmd instanceof EraseCommand) {
+                ((EraseCommand) cmd).undo(undoStack);
+            }
+            redoStack.push(cmd);
             redrawCallback.run();
         }
     }
 
     public void redo(Runnable redrawCallback) {
         if (canRedo()) {
-            undoStack.push(redoStack.pop());
+            DrawingCommand cmd = redoStack.pop();
+            if (cmd instanceof EraseCommand) {
+                ((EraseCommand) cmd).redo(undoStack);
+            }
+            undoStack.push(cmd);
             redrawCallback.run();
         }
+    }
+
+    public void setUndoStack(List<DrawingCommand> commands) {
+        this.undoStack.clear();
+        this.undoStack.addAll(commands);
     }
 
     public Iterable<DrawingCommand> getHistory() {

@@ -176,4 +176,97 @@ public class ShapeCommand implements DrawingCommand {
         
         gc.drawImage(censoredImage, startX, startY);
     }
+
+    public Point2D getStart() {
+        return start;
+    }
+
+    public Point2D getEnd() {
+        return end;
+    }
+
+    public DrawMode getMode() {
+        return mode;
+    }
+
+    public Color getColor() {
+        return color;
+    }
+
+    public double getLineWidth() {
+        return lineWidth;
+    }
+
+    public WritableImage getCanvasSnapshot() {
+        return canvasSnapshot;
+    }
+
+    public boolean intersects(Point2D circleCenter, double circleRadius) {
+        double x1 = start.getX();
+        double y1 = start.getY();
+        double x2 = end.getX();
+        double y2 = end.getY();
+
+        switch (mode) {
+            case LINE:
+            case ARROW:
+                return distanceToSegment(circleCenter, start, end) <= circleRadius + lineWidth / 2.0;
+
+            case RECTANGLE:
+            case FILLED_RECTANGLE:
+            case CENSOR_RECTANGLE: {
+                double minX = Math.min(x1, x2);
+                double maxX = Math.max(x1, x2);
+                double minY = Math.min(y1, y2);
+                double maxY = Math.max(y1, y2);
+                double closestX = Math.max(minX, Math.min(circleCenter.getX(), maxX));
+                double closestY = Math.max(minY, Math.min(circleCenter.getY(), maxY));
+                double dist = Math.hypot(circleCenter.getX() - closestX, circleCenter.getY() - closestY);
+                return dist <= circleRadius;
+            }
+
+            case CIRCLE:
+            case FILLED_CIRCLE: {
+                double radius = Math.hypot(x2 - x1, y2 - y1);
+                double dist = start.distance(circleCenter);
+                return dist <= radius + circleRadius;
+            }
+
+            case ELLIPSE:
+            case FILLED_ELLIPSE: {
+                // Use bounding box of ellipse for simplicity
+                double minX = Math.min(x1, x2);
+                double maxX = Math.max(x1, x2);
+                double minY = Math.min(y1, y2);
+                double maxY = Math.max(y1, y2);
+                double closestX = Math.max(minX, Math.min(circleCenter.getX(), maxX));
+                double closestY = Math.max(minY, Math.min(circleCenter.getY(), maxY));
+                double dist = Math.hypot(circleCenter.getX() - closestX, circleCenter.getY() - closestY);
+                return dist <= circleRadius;
+            }
+
+            default:
+                return false;
+        }
+    }
+
+    private double distanceToSegment(Point2D p, Point2D s1, Point2D s2) {
+        double x = p.getX();
+        double y = p.getY();
+        double x1 = s1.getX();
+        double y1 = s1.getY();
+        double x2 = s2.getX();
+        double y2 = s2.getY();
+        
+        double l2 = Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2);
+        if (l2 == 0) return Math.hypot(x - x1, y - y1);
+        
+        double t = ((x - x1) * (x2 - x1) + (y - y1) * (y2 - y1)) / l2;
+        t = Math.max(0, Math.min(1, t));
+        
+        double projX = x1 + t * (x2 - x1);
+        double projY = y1 + t * (y2 - y1);
+        
+        return Math.hypot(x - projX, y - projY);
+    }
 }

@@ -20,4 +20,8 @@ public class NumberingSessionCommand implements DrawingCommand {
             c.draw(gc);
         }
     }
+
+    public List<NumberedCircle> getCircles() {
+        return circles;
+    }
 }

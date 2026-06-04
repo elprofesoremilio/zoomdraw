@@ -229,6 +229,10 @@ public class AnnotationManager {
         return currentStage != null && currentStage.isNumberingModeActive();
     }
 
+    public boolean isEraserModeActive() {
+        return currentStage != null && currentStage.isEraserModeActive();
+    }
+
     public boolean isCropModeActive() {
         return currentStage != null && currentStage.isCropModeActive();
     }

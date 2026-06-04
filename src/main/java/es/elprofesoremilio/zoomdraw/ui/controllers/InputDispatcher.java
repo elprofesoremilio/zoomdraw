@@ -18,6 +18,7 @@ public class InputDispatcher {
     private final DrawingController drawingController;
     private final TextToolController textToolController;
     private final NumberingToolController numberingToolController;
+    private final EraserToolController eraserToolController;
     private final CropToolController cropToolController;
     private final CaptureController captureController;
     private final AnnotationManager manager;
@@ -28,6 +29,7 @@ public class InputDispatcher {
                            DrawingController drawingController,
                            TextToolController textToolController,
                            NumberingToolController numberingToolController,
+                           EraserToolController eraserToolController,
                            CropToolController cropToolController,
                            CaptureController captureController,
                            AnnotationManager manager,
@@ -36,6 +38,7 @@ public class InputDispatcher {
         this.drawingController = drawingController;
         this.textToolController = textToolController;
         this.numberingToolController = numberingToolController;
+        this.eraserToolController = eraserToolController;
         this.cropToolController = cropToolController;
         this.captureController = captureController;
         this.manager = manager;
@@ -55,6 +58,11 @@ public class InputDispatcher {
         scene.setOnMouseMoved(this::handleMouseMoved);
         scene.setOnMouseClicked(this::handleMouseClicked);
         scene.setOnScroll(this::handleScroll);
+        scene.setOnMouseExited(e -> {
+            if (eraserToolController.isActive()) {
+                eraserToolController.clearPreview();
+            }
+        });
     }
 
     private void handleKeyPressedFilter(KeyEvent event) {
@@ -105,6 +113,31 @@ public class InputDispatcher {
                     event.consume();
                     return;
                 }
+            }
+        }
+
+        // Eraser Mode Keyboard Controls
+        if (isCtrl && code == KeyCode.D) {
+            if (eraserToolController.isActive()) {
+                eraserToolController.exitEraserMode();
+            } else {
+                if (textToolController.isActive()) {
+                    textToolController.exitTextMode();
+                }
+                if (numberingToolController.isActive()) {
+                    numberingToolController.cancelNumberingMode();
+                }
+                eraserToolController.enterEraserMode();
+            }
+            event.consume();
+            return;
+        }
+
+        if (eraserToolController.isActive()) {
+            if (code == KeyCode.ESCAPE) {
+                eraserToolController.exitEraserMode();
+                event.consume();
+                return;
             }
         }
 
@@ -332,6 +365,10 @@ public class InputDispatcher {
             cropToolController.handleMousePressed(event);
             return;
         }
+        if (eraserToolController.isActive()) {
+            eraserToolController.handleMousePressed(event);
+            return;
+        }
         if (numberingToolController.isActive()) {
             numberingToolController.handleMousePressed(event);
             return;
@@ -346,6 +383,10 @@ public class InputDispatcher {
     private void handleMouseDragged(MouseEvent event) {
         if (cropToolController.isActive()) {
             cropToolController.handleMouseDragged(event);
+            return;
+        }
+        if (eraserToolController.isActive()) {
+            eraserToolController.handleMouseDragged(event);
             return;
         }
         if (numberingToolController.isActive()) {
@@ -363,6 +404,10 @@ public class InputDispatcher {
             cropToolController.handleMouseReleased(event);
             return;
         }
+        if (eraserToolController.isActive()) {
+            eraserToolController.handleMouseReleased(event);
+            return;
+        }
         if (numberingToolController.isActive()) {
             numberingToolController.handleMouseReleased(event);
             return;
@@ -376,6 +421,10 @@ public class InputDispatcher {
     private void handleMouseMoved(MouseEvent event) {
         if (cropToolController.isActive()) {
             cropToolController.handleMouseMoved(event);
+            return;
+        }
+        if (eraserToolController.isActive()) {
+            eraserToolController.handleMouseMoved(event);
             return;
         }
         if (numberingToolController.isActive()) {
@@ -394,6 +443,16 @@ public class InputDispatcher {
 
     private void handleScroll(ScrollEvent event) {
         if (event.isControlDown()) {
+            if (eraserToolController.isActive()) {
+                if (event.getDeltaY() > 0) {
+                    eraserToolController.increaseRadius();
+                } else if (event.getDeltaY() < 0) {
+                    eraserToolController.decreaseRadius();
+                }
+                eraserToolController.drawEraserPreview(event.getX(), event.getY(), false);
+                event.consume();
+                return;
+            }
             double newWidth = manager.getCurrentLineWidth();
             if (event.getDeltaY() > 0) {
                 newWidth = Math.min(AppConfig.LINE_WIDTH_MAX, newWidth + AppConfig.LINE_WIDTH_SCROLL_STEP);
@@ -421,6 +480,9 @@ public class InputDispatcher {
             stage.redrawAll();
             if (textToolController.isTyping()) {
                 textToolController.redrawTextTemporal();
+            }
+            if (eraserToolController.isActive()) {
+                eraserToolController.drawEraserPreview(event.getX(), event.getY(), false);
             }
             event.consume();
         }
