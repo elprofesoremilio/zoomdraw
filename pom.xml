@@ -155,6 +155,8 @@
                                     <outfile>target/ZoomDraw.exe</outfile>
                                     <jar>target/ZoomDraw-${project.version}-fat.jar</jar>
                                     <errTitle>Error en ZoomDraw</errTitle>
+
+                                    <icon>src/main/resources/zoomdraw.ico</icon>
                                     <classPath>
                                         <mainClass>${mainClass}</mainClass>
                                     </classPath>
