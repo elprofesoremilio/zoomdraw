@@ -70,7 +70,7 @@ public class DrawingController {
             case E:
                 isEPressed = true;
                 if (!event.isControlDown() && !event.isAltDown() && !event.isShiftDown() && !event.isMetaDown()) {
-                    commandHistory.execute(new ClearCommand(stage::drawCurrentBackground), gcPermanent);
+                    commandHistory.execute(new ClearCommand(), gcPermanent);
                     stage.redrawAll();
                 }
                 event.consume();

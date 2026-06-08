@@ -179,11 +179,10 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
             gcPermanent.setFill(backgroundColorOverride);
             gcPermanent.fillRect(0, 0, canvasPermanent.getWidth(), canvasPermanent.getHeight());
         } else {
-            // Limpiamos el canvas
-            gcPermanent.clearRect(0, 0, canvasPermanent.getWidth(), canvasPermanent.getHeight());
             // Aplicamos un fondo casi invisible (1% opacidad) para asegurar que el OS
-            // no trate la ventana como "click-through" (traspasable) si la captura falla
-            // o tiene píxeles transparentes por accidente.
+            // no trate la ventana como "click-through" (traspasable) si la captura falla.
+            // No llamamos clearRect aquí: redrawAll() ya limpió el canvas con transform
+            // identidad antes de invocar este método.
             gcPermanent.setFill(new Color(1, 1, 1, 0.01));
             gcPermanent.fillRect(0, 0, canvasPermanent.getWidth(), canvasPermanent.getHeight());
             
@@ -194,14 +193,32 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
     }
 
     public void redrawAll() {
+        // Resetear el transform a identidad de forma absoluta antes de limpiar el canvas.
+        // Usar setTransform() (no save/restore) evita el bug en Linux/GTK donde el
+        // GraphicsContext puede acumular estado de transform entre llamadas, causando que
+        // clearRect() no limpie el canvas completo y el fondo quede fijado a zoom=1
+        // mientras solo los trazos se actualizan con el nuevo nivel de zoom.
+        gcPermanent.setTransform(1, 0, 0, 1, 0, 0);
         gcPermanent.clearRect(0, 0, canvasPermanent.getWidth(), canvasPermanent.getHeight());
-        gcPermanent.save();
-        zoomPanController.applyTransform(gcPermanent);
+
+        // Aplicar el transform de zoom de forma absoluta (no concatenada sobre estado previo)
+        gcPermanent.setTransform(
+                zoomPanController.getZoomFactor(), 0,
+                0, zoomPanController.getZoomFactor(),
+                zoomPanController.getOffsetX(), zoomPanController.getOffsetY()
+        );
         gcPermanent.setImageSmoothing(true);
         
         drawCurrentBackground();
         for (DrawingCommand cmd : commandHistory.getHistory()) {
             cmd.execute(gcPermanent);
+            // Si el comando es un Clear, redibujamos el fondo de la sesión ACTUAL
+            // después de limpiar el canvas. Esto corrige el bug donde ClearCommand
+            // capturaba el drawCurrentBackground() del stage antiguo (sesión anterior),
+            // causando que el fondo nunca se redibujara en la nueva sesión.
+            if (cmd instanceof ClearCommand) {
+                drawCurrentBackground();
+            }
         }
         
         if (numberingToolController.isActive()) {
@@ -216,7 +233,10 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
             }
         }
         
-        gcPermanent.restore();
+        // Restaurar a identidad al terminar para que el resto del código que usa
+        // gcPermanent (como DrawingController.handleMouseReleased con su save/restore)
+        // parta siempre de un estado limpio y predecible.
+        gcPermanent.setTransform(1, 0, 0, 1, 0, 0);
         updateBrushSettings();
     }
 

@@ -8,7 +8,6 @@ import javafx.scene.text.FontWeight;
 import java.util.logging.Level;
 
 public class AppConfig {
-
     // System Properties
     public static final String UI_SCALE = "1.0";
     public static final String JDK_GTK_VERSION = "3";

@@ -9,6 +9,8 @@ import java.awt.*;
 
 public class ScreenUtils {
 
+    private static javafx.scene.robot.Robot fxRobot;
+
     /**
      * Gets the full bounds of the screen where the mouse cursor is located.
      */
@@ -40,11 +42,12 @@ public class ScreenUtils {
      */
     public static WritableImage captureScreen(Rectangle2D bounds) {
         try {
-            // Usamos el Robot moderno de JavaFX, que es instantáneo y nativo.
-            javafx.scene.robot.Robot fxRobot = new javafx.scene.robot.Robot();
+            if (fxRobot == null) {
+                fxRobot = new javafx.scene.robot.Robot();
+            }
             return fxRobot.getScreenCapture(null, bounds);
         } catch (Exception e) {
-            AppLogger.logError("Error nativo al capturar pantalla: " + e.getMessage());
+            AppLogger.logError("Error nativo al capturar pantalla: " + e.getMessage(), e);
             return null;
         }
     }
