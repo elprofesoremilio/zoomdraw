@@ -207,14 +207,33 @@ public class ShapeCommand implements DrawingCommand {
         double x2 = end.getX();
         double y2 = end.getY();
 
+        // Umbral efectivo: radio del borrador + la mitad del grosor del trazo
+        double effectiveRadius = circleRadius + lineWidth / 2.0;
+
         switch (mode) {
             case LINE:
             case ARROW:
-                return distanceToSegment(circleCenter, start, end) <= circleRadius + lineWidth / 2.0;
+                return distanceToSegment(circleCenter, start, end) <= effectiveRadius;
 
-            case RECTANGLE:
+            case RECTANGLE: {
+                // Forma sin relleno: solo se detecta si el borrador toca uno de los 4 bordes
+                double minX = Math.min(x1, x2);
+                double maxX = Math.max(x1, x2);
+                double minY = Math.min(y1, y2);
+                double maxY = Math.max(y1, y2);
+                Point2D tl = new Point2D(minX, minY);
+                Point2D tr = new Point2D(maxX, minY);
+                Point2D bl = new Point2D(minX, maxY);
+                Point2D br = new Point2D(maxX, maxY);
+                return distanceToSegment(circleCenter, tl, tr) <= effectiveRadius  // borde superior
+                    || distanceToSegment(circleCenter, bl, br) <= effectiveRadius  // borde inferior
+                    || distanceToSegment(circleCenter, tl, bl) <= effectiveRadius  // borde izquierdo
+                    || distanceToSegment(circleCenter, tr, br) <= effectiveRadius; // borde derecho
+            }
+
             case FILLED_RECTANGLE:
             case CENSOR_RECTANGLE: {
+                // Forma con relleno: se detecta si el borrador toca el área interior
                 double minX = Math.min(x1, x2);
                 double maxX = Math.max(x1, x2);
                 double minY = Math.min(y1, y2);
@@ -222,27 +241,63 @@ public class ShapeCommand implements DrawingCommand {
                 double closestX = Math.max(minX, Math.min(circleCenter.getX(), maxX));
                 double closestY = Math.max(minY, Math.min(circleCenter.getY(), maxY));
                 double dist = Math.hypot(circleCenter.getX() - closestX, circleCenter.getY() - closestY);
-                return dist <= circleRadius;
+                return dist <= effectiveRadius;
             }
 
-            case CIRCLE:
-            case FILLED_CIRCLE: {
+            case CIRCLE: {
+                // Forma sin relleno: solo se detecta si el borrador toca el borde circular
                 double radius = Math.hypot(x2 - x1, y2 - y1);
                 double dist = start.distance(circleCenter);
-                return dist <= radius + circleRadius;
+                return Math.abs(dist - radius) <= effectiveRadius;
             }
 
-            case ELLIPSE:
-            case FILLED_ELLIPSE: {
-                // Use bounding box of ellipse for simplicity
+            case FILLED_CIRCLE: {
+                // Forma con relleno: se detecta si el borrador toca el área interior
+                double radius = Math.hypot(x2 - x1, y2 - y1);
+                double dist = start.distance(circleCenter);
+                return dist <= radius + effectiveRadius;
+            }
+
+            case ELLIPSE: {
+                // Forma sin relleno: se detecta si el borrador está en la banda anular del borde
                 double minX = Math.min(x1, x2);
                 double maxX = Math.max(x1, x2);
                 double minY = Math.min(y1, y2);
                 double maxY = Math.max(y1, y2);
-                double closestX = Math.max(minX, Math.min(circleCenter.getX(), maxX));
-                double closestY = Math.max(minY, Math.min(circleCenter.getY(), maxY));
-                double dist = Math.hypot(circleCenter.getX() - closestX, circleCenter.getY() - closestY);
-                return dist <= circleRadius;
+                double a = (maxX - minX) / 2.0; // semiejex
+                double b = (maxY - minY) / 2.0; // semiejey
+                double cx = (minX + maxX) / 2.0;
+                double cy = (minY + maxY) / 2.0;
+                if (a <= 0 || b <= 0) return false;
+                double dx = circleCenter.getX() - cx;
+                double dy = circleCenter.getY() - cy;
+                // Dentro de la elipse exterior (a+r, b+r) y fuera de la elipse interior (a-r, b-r)
+                double aOuter = a + effectiveRadius;
+                double bOuter = b + effectiveRadius;
+                double aInner = Math.max(0, a - effectiveRadius);
+                double bInner = Math.max(0, b - effectiveRadius);
+                boolean insideOuter = (dx * dx) / (aOuter * aOuter) + (dy * dy) / (bOuter * bOuter) <= 1.0;
+                boolean outsideInner = (aInner <= 0 || bInner <= 0)
+                    || (dx * dx) / (aInner * aInner) + (dy * dy) / (bInner * bInner) >= 1.0;
+                return insideOuter && outsideInner;
+            }
+
+            case FILLED_ELLIPSE: {
+                // Forma con relleno: se detecta si el borrador toca el área interior
+                double minX = Math.min(x1, x2);
+                double maxX = Math.max(x1, x2);
+                double minY = Math.min(y1, y2);
+                double maxY = Math.max(y1, y2);
+                double a = (maxX - minX) / 2.0;
+                double b = (maxY - minY) / 2.0;
+                double cx = (minX + maxX) / 2.0;
+                double cy = (minY + maxY) / 2.0;
+                if (a <= 0 || b <= 0) return false;
+                double dx = circleCenter.getX() - cx;
+                double dy = circleCenter.getY() - cy;
+                double aOuter = a + effectiveRadius;
+                double bOuter = b + effectiveRadius;
+                return (dx * dx) / (aOuter * aOuter) + (dy * dy) / (bOuter * bOuter) <= 1.0;
             }
 
             default:
