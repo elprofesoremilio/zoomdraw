@@ -33,6 +33,7 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
     private final WritableImage background;
 
     private final ImageCursor pencilCursor;
+    private final ImageCursor xCursor;
 
     private Color backgroundColorOverride = null;
 
@@ -107,6 +108,23 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
         params.setFill(Color.TRANSPARENT);
         WritableImage cursorImage = cursorCanvas.snapshot(params, null);
         this.pencilCursor = new ImageCursor(cursorImage, 0, 0);
+
+        // Create X cursor (shown when clicking is forbidden outside the text editing area)
+        Canvas xCursorCanvas = new Canvas(24, 24);
+        GraphicsContext xgc = xCursorCanvas.getGraphicsContext2D();
+        xgc.setLineCap(javafx.scene.shape.StrokeLineCap.ROUND);
+        xgc.setStroke(Color.WHITE);
+        xgc.setLineWidth(4.0);
+        xgc.strokeLine(4, 4, 20, 20);
+        xgc.strokeLine(20, 4, 4, 20);
+        xgc.setStroke(Color.RED);
+        xgc.setLineWidth(2.5);
+        xgc.strokeLine(4, 4, 20, 20);
+        xgc.strokeLine(20, 4, 4, 20);
+        SnapshotParameters xParams = new SnapshotParameters();
+        xParams.setFill(Color.TRANSPARENT);
+        WritableImage xCursorImage = xCursorCanvas.snapshot(xParams, null);
+        this.xCursor = new ImageCursor(xCursorImage, 12, 12);
 
         // Instantiate specialized controllers
         this.zoomPanController = new ZoomPanController();
@@ -275,6 +293,10 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
 
     public ImageCursor getPencilCursor() {
         return pencilCursor;
+    }
+
+    public ImageCursor getXCursor() {
+        return xCursor;
     }
 
     public Color getBackgroundColorOverride() {

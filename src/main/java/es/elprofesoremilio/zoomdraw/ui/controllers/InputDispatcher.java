@@ -169,7 +169,11 @@ public class InputDispatcher {
 
         // 6. Global exit key logic
         if (code == AppConfig.EXIT_KEY) {
-            manager.stopAnnotationMode();
+            if (textToolController.isActive()) {
+                textToolController.cancelEdit();
+            } else {
+                manager.stopAnnotationMode();
+            }
             event.consume();
             return;
         }
@@ -394,6 +398,7 @@ public class InputDispatcher {
             return;
         }
         if (textToolController.isActive()) {
+            textToolController.handleMouseMoved(event.getX(), event.getY());
             return;
         }
         drawingController.handleMouseDragged(event);
@@ -429,6 +434,10 @@ public class InputDispatcher {
         }
         if (numberingToolController.isActive()) {
             numberingToolController.handleMouseMoved(event.getX(), event.getY());
+            return;
+        }
+        if (textToolController.isActive()) {
+            textToolController.handleMouseMoved(event.getX(), event.getY());
         }
     }
 

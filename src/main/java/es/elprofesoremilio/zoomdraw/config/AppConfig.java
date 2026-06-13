@@ -54,6 +54,10 @@ public class AppConfig {
     
     // Text Tool
     public static final double TEXT_SIZE_MULTIPLIER = 10.0;
+    public static final int TEXT_TAB_SPACES = 4;
+    public static final int TEXT_CURSOR_BLINK_MS = 500;
+    public static final Color TEXT_EDIT_BORDER_COLOR = new Color(0.27, 0.52, 0.96, 1.0); // cornflower blue
+    public static final Color TEXT_SELECTION_COLOR = new Color(0.2, 0.4, 0.9, 0.35);
 
     // Help Window
     public static final double HELP_WINDOW_OPACITY_MIN = 0.2;

@@ -65,4 +65,8 @@ public class TextBlock {
     public boolean isEmpty() {
         return runs.isEmpty();
     }
+
+    public void clear() {
+        runs.clear();
+    }
 }

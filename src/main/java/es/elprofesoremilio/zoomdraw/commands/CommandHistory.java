@@ -27,6 +27,8 @@ public class CommandHistory {
             DrawingCommand cmd = undoStack.pop();
             if (cmd instanceof EraseCommand) {
                 ((EraseCommand) cmd).undo(undoStack);
+            } else if (cmd instanceof TextEditMarkerCommand) {
+                ((TextEditMarkerCommand) cmd).undoEdit();
             }
             redoStack.push(cmd);
             redrawCallback.run();
@@ -38,6 +40,8 @@ public class CommandHistory {
             DrawingCommand cmd = redoStack.pop();
             if (cmd instanceof EraseCommand) {
                 ((EraseCommand) cmd).redo(undoStack);
+            } else if (cmd instanceof TextEditMarkerCommand) {
+                ((TextEditMarkerCommand) cmd).redoEdit();
             }
             undoStack.push(cmd);
             redrawCallback.run();

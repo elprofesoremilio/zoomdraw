@@ -98,7 +98,8 @@ El zoom se implementa con `zoomFactor` + `offsetX/offsetY` aplicados mediante `g
 |---|---|
 | `PathCommand` | Trazo libre (lista de `Point2D`), color, grosor |
 | `ShapeCommand` | Punto inicio/fin, `DrawMode`, color, grosor, snapshot de censor opcional |
-| `TextCommand` | Bloque de texto (`TextBlock` → `TextRun` → `TextTokens`), posición, estilo |
+| `TextCommand` | Bloque de texto (`TextBlock` → `TextRun` → `TextTokens`), posición, estilo. Admite `setFlatContent()`/`getFlatContent()` para edición in-place y flag `hiddenForEditing` para ocultarse mientras se edita en el temporal |
+| `TextEditMarkerCommand` | Marcador de undo/redo para una edición in-place de un `TextCommand` existente; no dibuja nada, solo restaura/aplica el contenido plano |
 | `ClearCommand` | Marca de "borrar todo el lienzo" |
 | `NumberingSessionCommand` | Lista de `NumberedCircle` como una sola unidad de undo |
 | `EraseCommand` | Diff entre historia original y resultante al borrar con el borrador |
@@ -114,7 +115,7 @@ Todos en `ui/controllers/`. Cada uno recibe canvas, `ZoomPanController` y `Comma
 | `InputDispatcher` | Router central de eventos de teclado y ratón; delega a los controladores en orden de prioridad de modo activo |
 | `ZoomPanController` | Estado de zoom (`zoomFactor`, `offsetX`, `offsetY`) y cálculo `zoomAtCursor` |
 | `DrawingController` | Lápiz libre y formas geométricas (teclas de modo + arrastrar) |
-| `TextToolController` | Modo texto: posicionamiento, edición multilínea, soporte IME/acentos |
+| `TextToolController` | Modo texto: editor en línea con cursor/selección/portapapeles, click en texto existente para editar, auto-indent en Enter, borde de edición parpadeante |
 | `NumberingToolController` | Modo numeración: insertar, mover, borrar, reordenar círculos numerados |
 | `EraserToolController` | Modo borrador: elimina/recorta trazos y formas en el radio del cursor |
 | `CropToolController` | Modo recorte: selección rectangular para captura parcial |
@@ -167,11 +168,49 @@ El efecto de censura captura un snapshot del canvas a zoom 1× (`get1xCanvasSnap
 
 `ui/controllers/TextToolController.java`
 
-- Pulsar `T` activa el modo. Click en el canvas posiciona el cursor de texto.
+**Activación y clicks**
+
+| Acción | Resultado |
+|---|---|
+| `T` | Activa/desactiva el modo texto |
+| Click izquierdo en zona vacía | Crea un nuevo bloque de texto en esa posición |
+| Click izquierdo sobre texto existente | Abre ese bloque para edición en línea |
+| Click izquierdo dentro del bloque en edición | Reposiciona el cursor al punto de clic |
+| Click derecho | Fija el texto actual y sale del modo texto |
+| `ESC` | Descarta cambios y sale del modo texto |
+
+**Editor en línea**
+
+Cuando un bloque está en edición aparece un borde azul punteado y un cursor parpadeante (intervalo configurable en `AppConfig.TEXT_CURSOR_BLINK_MS`).
+
+| Tecla | Acción |
+|---|---|
+| ← / → | Mover un carácter |
+| ↑ / ↓ | Mover una línea |
+| `Home` / `End` | Inicio / final de línea |
+| `Ctrl+←` / `Ctrl+→` | Mover una palabra |
+| `Shift` + flechas | Seleccionar texto |
+| `Backspace` | Borrar carácter a la izquierda |
+| `Supr` (`Delete`) | Borrar carácter a la derecha |
+| `Ctrl+C` / `Ctrl+X` / `Ctrl+V` | Copiar / cortar / pegar |
+| `Enter` | Nueva línea con herencia automática de tabulación |
+| `Tab` | Insertar tabulación |
+
+**Indentación automática**
+
+Al pulsar `Enter` al final de una línea que empieza con tabuladores, la nueva línea hereda el mismo nivel de tabulación. El número de espacios por tabulador se configura con `AppConfig.TEXT_TAB_SPACES` (por defecto 4).
+
+**Deshacer / rehacer**
+
+- Nuevo bloque: un único `TextCommand` en el historial.
+- Edición de bloque existente: la edición completa se registra como un único paso de deshacer (`TextEditMarkerCommand` en el historial; el `TextCommand` original se muta in-place).
+
+**Otros detalles**
+
 - Soporte de acentos y caracteres especiales mediante un `TextField` oculto (solución para Linux/IME).
-- Texto multilínea con `TextBlock` → `TextRun` → `TextTokens`; cada bloque admite mezcla de estilos.
-- Preview en tiempo real en `canvasTemporal`; al confirmar se crea un `TextCommand`.
-- Grosor de línea actual escala el tamaño de fuente (`AppConfig.TEXT_SIZE_MULTIPLIER = 10.0`).
+- El tamaño de fuente se deriva del grosor de línea actual (`AppConfig.TEXT_SIZE_MULTIPLIER = 10.0`).
+- Preview en tiempo real en `canvasTemporal`; al confirmar pasa a `canvasPermanent`.
+- Compatible con zoom: las coordenadas se almacenan en espacio pre-zoom.
 
 ### Modo numeración automática (`N`)
 
