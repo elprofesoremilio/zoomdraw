@@ -1,5 +1,6 @@
 package es.elprofesoremilio.zoomdraw;
 import es.elprofesoremilio.zoomdraw.config.AppConfig;
+import es.elprofesoremilio.zoomdraw.config.ConfigManager;
 import javafx.application.Application;
 
 import java.io.File;
@@ -31,6 +32,7 @@ public class Main {
         System.setProperty("jnativehook.lib.path", System.getProperty("java.io.tmpdir"));
 
         AppConfig.loadSystemProperties();
+        ConfigManager.load();
         java.awt.Toolkit.getDefaultToolkit();
         Application.launch(AppLauncher.class, args);
     }

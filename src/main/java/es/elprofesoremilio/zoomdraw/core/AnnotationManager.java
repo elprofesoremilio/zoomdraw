@@ -19,6 +19,8 @@ public class AnnotationManager {
     private volatile boolean active = false;
     private es.elprofesoremilio.zoomdraw.ui.LaserPointerStage laserStage = null;
     private volatile boolean laserActive = false;
+    private es.elprofesoremilio.zoomdraw.ui.RouletteStage rouletteStage = null;
+    private volatile boolean rouletteActive = false;
     private final BrushSettings brushSettings; // Use the new BrushSettings class
     private final CommandHistory globalHistory;
 
@@ -42,6 +44,7 @@ public class AnnotationManager {
 
     public void startLaserMode() {
         if (laserActive || active) return;
+        if (rouletteActive) stopRouletteMode();
         AppLogger.log("Starting laser pointer mode");
         Platform.runLater(() -> {
             try {
@@ -175,6 +178,11 @@ public class AnnotationManager {
             stopLaserMode();
         }
 
+        // Desactivar modo ruleta si está activo
+        if (rouletteActive) {
+            stopRouletteMode();
+        }
+
         AppLogger.log("Starting annotation mode");
 
         try {
@@ -257,6 +265,35 @@ public class AnnotationManager {
 
     public boolean isStageFocused() {
         return currentStage != null && currentStage.isFocused();
+    }
+
+    public boolean isRouletteActive() {
+        return rouletteActive;
+    }
+
+    public void toggleRouletteMode() {
+        Platform.runLater(() -> {
+            if (rouletteActive) stopRouletteMode();
+            else startRouletteMode();
+        });
+    }
+
+    public void startRouletteMode() {
+        if (active) stopAnnotationMode();
+        if (laserActive) stopLaserMode();
+        rouletteStage = new es.elprofesoremilio.zoomdraw.ui.RouletteStage(this);
+        rouletteStage.show();
+        rouletteActive = true;
+    }
+
+    public void stopRouletteMode() {
+        Platform.runLater(() -> {
+            if (rouletteStage != null) {
+                rouletteStage.close();
+                rouletteStage = null;
+            }
+            rouletteActive = false;
+        });
     }
 
     private void triggerFocusHammer() {

@@ -13,16 +13,19 @@ import es.elprofesoremilio.zoomdraw.utils.AppLogger;
 
 public class GlobalKeyHook implements NativeKeyListener, NativeMouseMotionListener {
 
-    private final AnnotationManager manager; // Still needed for isActive() check
+    private final AnnotationManager manager;
     private final Command toggleAnnotationModeCommand;
     private final Command stopAnnotationModeCommand;
+    private final Command toggleRouletteModeCommand;
 
     public GlobalKeyHook(AnnotationManager manager,
                          Command toggleAnnotationModeCommand,
-                         Command stopAnnotationModeCommand) {
+                         Command stopAnnotationModeCommand,
+                         Command toggleRouletteModeCommand) {
         this.manager = manager;
         this.toggleAnnotationModeCommand = toggleAnnotationModeCommand;
         this.stopAnnotationModeCommand = stopAnnotationModeCommand;
+        this.toggleRouletteModeCommand = toggleRouletteModeCommand;
     }
 
     public void register() {
@@ -64,10 +67,24 @@ public class GlobalKeyHook implements NativeKeyListener, NativeMouseMotionListen
             }
         }
 
+        // CTRL + 3 (Modo Ruleta - solo si no está en modo anotación ni láser)
+        if (ctrlDown && keyCode == AppConfig.ROULETTE_MODE_KEY) {
+            consumeEvent(e);
+            if (!manager.isActive() && !manager.isLaserActive()) {
+                toggleRouletteModeCommand.execute();
+            }
+        }
+
         // CTRL + 0
         if (ctrlDown && keyCode == AppConfig.HELP_WINDOW_KEY) {
             consumeEvent(e);
             manager.toggleHelpWindow();
+        }
+
+        // ESC cierra el modo ruleta
+        if (keyCode == NativeKeyEvent.VC_ESCAPE && manager.isRouletteActive()) {
+            consumeEvent(e);
+            manager.stopRouletteMode();
         }
 
         // ESC

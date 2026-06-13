@@ -17,6 +17,7 @@ public class AppConfig {
     // JNativeHook mode keys
     public static final int ANNOTATION_MODE_KEY = NativeKeyEvent.VC_1;
     public static final int LASER_MODE_KEY = NativeKeyEvent.VC_2;
+    public static final int ROULETTE_MODE_KEY = NativeKeyEvent.VC_3;
 
     // JNativeHook Logger Level
     public static final Level JNATIVEHOOK_LOG_LEVEL = Level.OFF;
@@ -128,6 +129,25 @@ public class AppConfig {
     public static final double ERASER_RADIUS_STEP = 2.0;
     public static final double ERASER_RADIUS_DEFAULT = 20.0;
 
+
+    // Roulette Mode – immutable defaults (used if config.properties absent)
+    public static final String  ROULETTE_DEFAULT_FILE_DEFAULT            = "default_roulette.txt";
+    public static final int     ROULETTE_ANIMATION_DURATION_MS_DEFAULT   = 3000;
+    public static final int     ROULETTE_ANIMATION_DURATION_MS_MIN       = 0;
+    public static final int     ROULETTE_ANIMATION_DURATION_MS_MAX       = 5000;
+    public static final int     ROULETTE_ANIMATION_DURATION_MS_STEP      = 100;
+    public static final boolean ROULETTE_SKIP_ANIMATION_DEFAULT          = false;
+    public static final String  ROULETTE_COLOR_PALETTE_DEFAULT           = "VIVID";
+    public static final boolean ROULETTE_REPEAT_MODE_DEFAULT             = true;
+
+    // Roulette Mode – mutable (loaded from config.properties at startup via ConfigManager)
+    public static String  rouletteDefaultFile         = ROULETTE_DEFAULT_FILE_DEFAULT;
+    public static int     rouletteAnimationDurationMs = ROULETTE_ANIMATION_DURATION_MS_DEFAULT;
+    public static boolean rouletteSkipAnimation       = ROULETTE_SKIP_ANIMATION_DEFAULT;
+    public static String  rouletteColorPalette        = ROULETTE_COLOR_PALETTE_DEFAULT;
+    public static boolean rouletteRepeatModeDefault   = ROULETTE_REPEAT_MODE_DEFAULT;
+    public static String  rouletteCustomPaletteName   = "Custom";
+    public static String  rouletteCustomPaletteColors = "";
 
     public static final boolean isLinux = System.getProperty("os.name").toLowerCase().contains("linux");
 

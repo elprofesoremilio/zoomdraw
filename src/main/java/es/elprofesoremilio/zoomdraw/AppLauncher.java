@@ -4,6 +4,7 @@ import com.github.kwhat.jnativehook.GlobalScreen;
 import dorkbox.util.CacheUtil;
 import es.elprofesoremilio.zoomdraw.commands.StopAnnotationModeCommand;
 import es.elprofesoremilio.zoomdraw.commands.ToggleAnnotationModeCommand;
+import es.elprofesoremilio.zoomdraw.commands.ToggleRouletteModeCommand;
 import es.elprofesoremilio.zoomdraw.config.AppConfig;
 import es.elprofesoremilio.zoomdraw.core.AnnotationManager;
 import es.elprofesoremilio.zoomdraw.input.GlobalKeyHook;
@@ -51,9 +52,10 @@ public class AppLauncher extends Application {
         // Crear comandos
         ToggleAnnotationModeCommand toggleCommand = new ToggleAnnotationModeCommand(annotationManager);
         StopAnnotationModeCommand stopCommand = new StopAnnotationModeCommand(annotationManager);
+        ToggleRouletteModeCommand toggleRouletteCommand = new ToggleRouletteModeCommand(annotationManager);
 
         // Registrar el hook global
-        globalKeyHook = new GlobalKeyHook(annotationManager, toggleCommand, stopCommand);
+        globalKeyHook = new GlobalKeyHook(annotationManager, toggleCommand, stopCommand, toggleRouletteCommand);
         globalKeyHook.register();
 
         // Inicializar bandeja de sistema: nativa en Windows, Dorkbox en el resto

@@ -140,6 +140,7 @@ Todos en `ui/controllers/`. Cada uno recibe canvas, `ZoomPanController` y `Comma
 |---|---|---|
 | `Ctrl+1` | Activar/desactivar modo anotación | `GlobalKeyHook` → `AnnotationManager` |
 | `Ctrl+2` | Activar/desactivar puntero láser | `GlobalKeyHook` → `AnnotationManager` → `LaserPointerStage` |
+| `Ctrl+3` | Activar/desactivar modo ruleta | `GlobalKeyHook` → `AnnotationManager` → `RouletteStage` |
 | `Ctrl+0` | Mostrar/ocultar ventana de ayuda | `GlobalKeyHook` → `AnnotationManager` → `HelpWindow` |
 
 ### Dibujo libre (modo anotación)
@@ -274,6 +275,36 @@ El nombre de archivo por defecto incluye fecha y hora (`anotacion_YYYYMMDD_HHmms
 - Slider de opacidad de la propia ventana (20%–100%).
 - Botón "Cerrar App" como alternativa cuando la bandeja no está disponible.
 - CSS externo (`/help_style.css`) para el estilo oscuro del `TabPane`.
+
+### Modo ruleta (`Ctrl+3`)
+
+`ui/RouletteStage.java` — ventana independiente (siempre on-top, 820×560 px, redimensionable).
+
+**Layout**: canal izquierdo con la rueda + checkbox de repetición; canal derecho con `TextArea` de lista + botones de archivo.
+
+**Rueda**: canvas 400×400 dibujado con polígono por aproximación (`beginPath`/`lineTo`). Cada sector recibe color de la paleta activa, texto rotado radialmente y truncado adaptativo. Puntero rojo fijo en la parte superior. El estado de rotación es una `DoubleProperty` animada con `Timeline` + `Interpolator.EASE_OUT`.
+
+**Lógica de giro**: al hacer clic, se elige un `winnerIdx` al azar, se calcula `targetAngle = -(winnerIdx + 0.5) * sectorAngle + k*360` (5 vueltas completas mínimo), y se anima hacia ese ángulo. Si `skip_animation=true` o `animation_duration_ms=0`, el salto es inmediato.
+
+**Overlay de resultado**: `StackPane` vinculado (`prefWidthProperty`/`prefHeightProperty`) al root. Fondo semitransparente negro + tarjeta central con el nombre, botones "Eliminar" y "Cerrar". Clic fuera de la tarjeta = cerrar.
+
+**Modo repetición**: `CheckBox` inicializado desde `AppConfig.rouletteRepeatModeDefault`. Si está desmarcado, el ganador se elimina de la lista en memoria antes de mostrar el overlay (auto-eliminación). Solo afecta a la sesión; no persiste automáticamente.
+
+**Paletas de colores**: `VIVID` (10 colores saturados) y `PASTEL` (10 tonos suaves) como fijas. `Custom` se guarda en `config.properties` como `custom_palette_colors` (hex separados por comas).
+
+**Archivos**: UTF-8, una línea por entrada. El archivo activo puede cambiar durante la sesión (cargar, guardar como); al reabrir la ruleta se carga siempre el archivo indicado por `AppConfig.rouletteDefaultFile`. Si no existe, se crea con "Opción 1"…"Opción 6".
+
+**Exclusividad**: activar ruleta desactiva anotación y láser (y viceversa). Mientras la ruleta está activa, `Ctrl+1` y `Ctrl+2` no abren sus modos.
+
+### Configuración persistente (`config.properties`)
+
+`config/ConfigManager.java` — carga y guarda `config.properties` (UTF-8, directorio de trabajo) usando `java.util.Properties`. `applyToAppConfig()` escribe los valores cargados en los campos mutables de `AppConfig`. `setAndSave(key, value)` actualiza en caliente (sin reiniciar).
+
+Claves: `roulette_default_file`, `animation_duration_ms`, `skip_animation`, `color_palette`, `repeat_mode_default`, `custom_palette_name`, `custom_palette_colors`.
+
+Se carga en `Main.main()` inmediatamente después de `AppConfig.loadSystemProperties()`.
+
+La pestaña **"Ruleta"** de `HelpWindow` (Ctrl+0) expone todos estos valores con controles enlazados que llaman a `ConfigManager.setAndSave()` en cada cambio, incluyendo un editor de paleta personalizada (stage modal con lista de colores y `ColorPicker`).
 
 ### Single-instance guard
 
