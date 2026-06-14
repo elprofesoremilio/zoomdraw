@@ -352,4 +352,8 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
     public boolean isCropModeActive() {
         return cropToolController != null && cropToolController.isActive();
     }
+
+    public GraphicsContext getGcPermanent() {
+        return gcPermanent;
+    }
 }

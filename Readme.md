@@ -148,6 +148,7 @@ Todos en `ui/controllers/`. Cada uno recibe canvas, `ZoomPanController` y `Comma
 
 - **Lápiz (`PathCommand`):** click y arrastrar. Coordenadas almacenadas en espacio pre-zoom; redibujado con transform.
 - **Borrar lienzo completo (`E`):** inserta `ClearCommand` en el historial (undo-able).
+- **Salir con `ESC`:** equivale a pulsar `E` y luego salir del modo. Si el lienzo ya estabá vacío (el último comando ya era un `ClearCommand`), no se duplica la entrada en el historial. Al volver a entrar se realiza siempre una captura nueva de la pantalla; `Ctrl+Z` recupera todos los trazos anteriores superpuestos al nuevo fondo.
 - **Modos de forma** — mantener tecla de modo + arrastrar:
 
 | Combinación | Forma | `DrawMode` |
@@ -293,6 +294,7 @@ El nombre de archivo por defecto incluye fecha y hora (`anotacion_YYYYMMDD_HHmms
 
 - `Ctrl+Z` / `Ctrl+Y`: implementados en `CommandHistory` con dos pilas.
 - El historial **persiste** entre sesiones de anotación (el mediador `AnnotationManager` es el propietario).
+- Al salir con `ESC`, se inserta automáticamente un `ClearCommand` en el historial (equivalente a pulsar `E`), salvo que el último comando ya fuese un `ClearCommand`. Al volver a entrar siempre se realiza una captura nueva de pantalla; `Ctrl+Z` recupera los trazos anteriores superpuestos sobre el nuevo fondo.
 
 ### Puntero láser
 

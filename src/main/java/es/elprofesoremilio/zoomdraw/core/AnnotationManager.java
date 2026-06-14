@@ -8,6 +8,8 @@ import javafx.geometry.Rectangle2D;
 import javafx.scene.image.WritableImage;
 import es.elprofesoremilio.zoomdraw.utils.AppLogger;
 import es.elprofesoremilio.zoomdraw.commands.CommandHistory;
+import es.elprofesoremilio.zoomdraw.commands.ClearCommand;
+import es.elprofesoremilio.zoomdraw.commands.DrawingCommand;
 
 /**
  * Orchestrates the annotation mode lifecycle.
@@ -219,6 +221,10 @@ public class AnnotationManager {
 
     public void stopAnnotationMode() {
         if (currentStage != null) {
+            DrawingCommand lastCmd = globalHistory.getLastCommand();
+            if (lastCmd != null && !(lastCmd instanceof ClearCommand)) {
+                globalHistory.execute(new ClearCommand(), currentStage.getGcPermanent());
+            }
             currentStage.close();
             currentStage = null;
         }

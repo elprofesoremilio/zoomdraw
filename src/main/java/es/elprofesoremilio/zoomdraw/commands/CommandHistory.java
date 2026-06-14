@@ -56,4 +56,11 @@ public class CommandHistory {
     public Iterable<DrawingCommand> getHistory() {
         return undoStack;
     }
+
+    public DrawingCommand getLastCommand() {
+        if (undoStack.isEmpty()) {
+            return null;
+        }
+        return undoStack.peek();
+    }
 }
