@@ -1,6 +1,7 @@
 package es.elprofesoremilio.zoomdraw.config;
 
 import es.elprofesoremilio.zoomdraw.utils.AppLogger;
+import es.elprofesoremilio.zoomdraw.input.Hotkey;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -15,6 +16,7 @@ public class ConfigManager {
 
     private static final String CONFIG_FILE = "config.properties";
     private static final Properties props = new Properties();
+    private static boolean configModified = false;
 
     public static void load() {
         File file = new File(CONFIG_FILE);
@@ -26,7 +28,11 @@ public class ConfigManager {
                 AppLogger.logError("Error cargando config.properties", e);
             }
         }
+        configModified = false;
         applyToAppConfig();
+        if (configModified) {
+            save();
+        }
     }
 
     public static void save() {
@@ -41,6 +47,16 @@ public class ConfigManager {
 
     public static String get(String key, String defaultValue) {
         return props.getProperty(key, defaultValue);
+    }
+
+    private static String getOrSetDefault(String key, String defaultValue) {
+        String val = props.getProperty(key);
+        if (val == null) {
+            props.setProperty(key, defaultValue);
+            configModified = true;
+            return defaultValue;
+        }
+        return val;
     }
 
     public static void set(String key, String value) {
@@ -75,5 +91,32 @@ public class ConfigManager {
 
         AppConfig.rouletteCustomPaletteName = get("custom_palette_name", "Custom");
         AppConfig.rouletteCustomPaletteColors = get("custom_palette_colors", "");
+
+        // Hotkey configuration loading with defaults
+        String hotkeyAnnotationStr = getOrSetDefault("hotkey_annotation", "Win+F2");
+        try {
+            AppConfig.hotkeyAnnotation = Hotkey.parse(hotkeyAnnotationStr);
+        } catch (Exception e) {
+            AppLogger.logError("Error parsing hotkey_annotation, reverting to default Win+F2", e);
+            AppConfig.hotkeyAnnotation = Hotkey.parse("Win+F2");
+        }
+
+        String hotkeyLaserStr = getOrSetDefault("hotkey_laser", "Win+F3");
+        try {
+            AppConfig.hotkeyLaser = Hotkey.parse(hotkeyLaserStr);
+        } catch (Exception e) {
+            AppLogger.logError("Error parsing hotkey_laser, reverting to default Win+F3", e);
+            AppConfig.hotkeyLaser = Hotkey.parse("Win+F3");
+        }
+
+        String hotkeyRouletteStr = getOrSetDefault("hotkey_roulette", "Win+F4");
+        try {
+            AppConfig.hotkeyRoulette = Hotkey.parse(hotkeyRouletteStr);
+        } catch (Exception e) {
+            AppLogger.logError("Error parsing hotkey_roulette, reverting to default Win+F4", e);
+            AppConfig.hotkeyRoulette = Hotkey.parse("Win+F4");
+        }
+
+        AppConfig.RENDERER_SUB_TEXT = "(o " + AppConfig.hotkeyAnnotation.toString() + " para activar/desactivar)";
     }
 }

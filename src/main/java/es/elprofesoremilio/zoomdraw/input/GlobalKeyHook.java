@@ -53,26 +53,29 @@ public class GlobalKeyHook implements NativeKeyListener, NativeMouseMotionListen
         boolean ctrlDown = (e.getModifiers() & NativeKeyEvent.CTRL_MASK) != 0;
         int keyCode = e.getKeyCode();
 
-        // CTRL + 1
-        if (ctrlDown && keyCode == AppConfig.ANNOTATION_MODE_KEY) {
+        // Modo anotación
+        if (AppConfig.hotkeyAnnotation != null && AppConfig.hotkeyAnnotation.matches(e)) {
             consumeEvent(e);
             toggleAnnotationModeCommand.execute();
+            return;
         }
 
-        // CTRL + 2 (Modo Láser - solo si no está en modo anotación)
-        if (ctrlDown && keyCode == AppConfig.LASER_MODE_KEY) {
+        // Modo Láser - solo si no está en modo anotación
+        if (AppConfig.hotkeyLaser != null && AppConfig.hotkeyLaser.matches(e)) {
             consumeEvent(e);
             if (!manager.isActive()) {
                 manager.toggleLaserMode();
             }
+            return;
         }
 
-        // CTRL + 3 (Modo Ruleta - solo si no está en modo anotación ni láser)
-        if (ctrlDown && keyCode == AppConfig.ROULETTE_MODE_KEY) {
+        // Modo Ruleta - solo si no está en modo anotación ni láser
+        if (AppConfig.hotkeyRoulette != null && AppConfig.hotkeyRoulette.matches(e)) {
             consumeEvent(e);
             if (!manager.isActive() && !manager.isLaserActive()) {
                 toggleRouletteModeCommand.execute();
             }
+            return;
         }
 
         // CTRL + 0

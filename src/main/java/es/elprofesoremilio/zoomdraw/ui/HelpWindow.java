@@ -54,10 +54,11 @@ public class HelpWindow extends Stage {
         title.setPadding(new Insets(0, 0, 10, 0));
         
         Label shortcuts = new Label(
-            "CTRL + 1: Activar/desactivar modo anotación\n" +
-            "CTRL + 2: Activar/desactivar modo puntero láser (desde inactivo)\n" +
+            AppConfig.hotkeyAnnotation.toString() + ": Activar/desactivar modo anotación\n" +
+            AppConfig.hotkeyLaser.toString() + ": Activar/desactivar modo puntero láser (desde inactivo)\n" +
+            AppConfig.hotkeyRoulette.toString() + ": Activar/desactivar modo ruleta (desde inactivo)\n" +
             "CTRL + 0: Mostrar/Ocultar esta ventana de ayuda\n" +
-            "ESC: Salir de modo anotación / puntero láser / texto / borrador\n\n" +
+            "ESC: Salir de modo anotación / puntero láser / texto / borrador / ruleta\n\n" +
             "Dibujo y Herramientas (Modo Anotación):\n" +
             "\tClick Izquierdo: Dibujar trazo libre / colocar texto\n" +
             "\tCTRL + Z: Deshacer  |  CTRL + Y: Rehacer\n" +

@@ -139,9 +139,9 @@ Todos en `ui/controllers/`. Cada uno recibe canvas, `ZoomPanController` y `Comma
 
 | Atajo | Modo | Clase principal |
 |---|---|---|
-| `Ctrl+1` | Activar/desactivar modo anotación | `GlobalKeyHook` → `AnnotationManager` |
-| `Ctrl+2` | Activar/desactivar puntero láser | `GlobalKeyHook` → `AnnotationManager` → `LaserPointerStage` |
-| `Ctrl+3` | Activar/desactivar modo ruleta | `GlobalKeyHook` → `AnnotationManager` → `RouletteStage` |
+| `Win+F2` | Activar/desactivar modo anotación (configurable) | `GlobalKeyHook` → `AnnotationManager` |
+| `Win+F3` | Activar/desactivar puntero láser (configurable) | `GlobalKeyHook` → `AnnotationManager` → `LaserPointerStage` |
+| `Win+F4` | Activar/desactivar modo ruleta (configurable) | `GlobalKeyHook` → `AnnotationManager` → `RouletteStage` |
 | `Ctrl+0` | Mostrar/ocultar ventana de ayuda | `GlobalKeyHook` → `AnnotationManager` → `HelpWindow` |
 
 ### Dibujo libre (modo anotación)
@@ -315,7 +315,7 @@ El nombre de archivo por defecto incluye fecha y hora (`anotacion_YYYYMMDD_HHmms
 - Botón "Cerrar App" como alternativa cuando la bandeja no está disponible.
 - CSS externo (`/help_style.css`) para el estilo oscuro del `TabPane`.
 
-### Modo ruleta (`Ctrl+3`)
+### Modo ruleta (`Win+F4`)
 
 `ui/RouletteStage.java` — ventana independiente (siempre on-top, 820×560 px, redimensionable).
 
@@ -333,13 +333,13 @@ El nombre de archivo por defecto incluye fecha y hora (`anotacion_YYYYMMDD_HHmms
 
 **Archivos**: UTF-8, una línea por entrada. El archivo activo puede cambiar durante la sesión (cargar, guardar como); al reabrir la ruleta se carga siempre el archivo indicado por `AppConfig.rouletteDefaultFile`. Si no existe, se crea con "Opción 1"…"Opción 6".
 
-**Exclusividad**: activar ruleta desactiva anotación y láser (y viceversa). Mientras la ruleta está activa, `Ctrl+1` y `Ctrl+2` no abren sus modos.
+**Exclusividad**: activar ruleta desactiva anotación y láser (y viceversa). Mientras la ruleta está activa, los atajos de anotación y láser no abren sus modos.
 
 ### Configuración persistente (`config.properties`)
 
 `config/ConfigManager.java` — carga y guarda `config.properties` (UTF-8, directorio de trabajo) usando `java.util.Properties`. `applyToAppConfig()` escribe los valores cargados en los campos mutables de `AppConfig`. `setAndSave(key, value)` actualiza en caliente (sin reiniciar).
 
-Claves: `roulette_default_file`, `animation_duration_ms`, `skip_animation`, `color_palette`, `repeat_mode_default`, `custom_palette_name`, `custom_palette_colors`.
+Claves: `roulette_default_file`, `animation_duration_ms`, `skip_animation`, `color_palette`, `repeat_mode_default`, `custom_palette_name`, `custom_palette_colors`, `hotkey_annotation`, `hotkey_laser`, `hotkey_roulette`.
 
 Se carga en `Main.main()` inmediatamente después de `AppConfig.loadSystemProperties()`.
 

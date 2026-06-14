@@ -1,6 +1,7 @@
 package es.elprofesoremilio.zoomdraw.config;
 
 import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent;
+import es.elprofesoremilio.zoomdraw.input.Hotkey;
 import javafx.scene.input.KeyCode;
 import javafx.scene.paint.Color;
 import javafx.scene.text.FontWeight;
@@ -15,9 +16,9 @@ public class AppConfig {
     public static final boolean JAVA2D_OPENGL = false;
 
     // JNativeHook mode keys
-    public static final int ANNOTATION_MODE_KEY = NativeKeyEvent.VC_1;
-    public static final int LASER_MODE_KEY = NativeKeyEvent.VC_2;
-    public static final int ROULETTE_MODE_KEY = NativeKeyEvent.VC_3;
+    public static Hotkey hotkeyAnnotation = Hotkey.parse("Win+F2");
+    public static Hotkey hotkeyLaser = Hotkey.parse("Win+F3");
+    public static Hotkey hotkeyRoulette = Hotkey.parse("Win+F4");
 
     // JNativeHook Logger Level
     public static final Level JNATIVEHOOK_LOG_LEVEL = Level.OFF;
@@ -41,7 +42,7 @@ public class AppConfig {
     public static final String RENDERER_SUB_FONT_FAMILY = "System";
     public static final FontWeight RENDERER_SUB_FONT_WEIGHT = FontWeight.NORMAL;
     public static final double RENDERER_SUB_FONT_SIZE = 16;
-    public static final String RENDERER_SUB_TEXT = "(o CTRL+1 para activar/desactivar)";
+    public static String RENDERER_SUB_TEXT = "(o Win+F2 para activar/desactivar)";
     public static final double RENDERER_SUB_TEXT_OFFSET_Y = 44;
 
     // AnnotationInputHandler
