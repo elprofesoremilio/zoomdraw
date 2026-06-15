@@ -20,10 +20,12 @@ import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
+import javafx.scene.image.Image;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class HelpWindow extends Stage {
     private double xOffset = 0;
@@ -31,6 +33,24 @@ public class HelpWindow extends Stage {
 
     public HelpWindow(AnnotationManager manager) {
         initStyle(StageStyle.TRANSPARENT);
+        setTitle("ZoomDraw");
+        try {
+            java.io.InputStream imgStream = getClass().getResourceAsStream("zoomdraw.png");
+            if (imgStream == null) {
+                imgStream = getClass().getResourceAsStream("/zoomdraw.png");
+            }
+            if (imgStream == null) {
+                imgStream = getClass().getClassLoader().getResourceAsStream("zoomdraw.png");
+            }
+            if (imgStream != null) {
+                getIcons().add(new Image(imgStream));
+            } else {
+                System.err.println("ZOOMDRAW: zoomdraw.png resource stream is null via all class loaders!");
+            }
+        } catch (Exception e) {
+            System.err.println("ZOOMDRAW: Error loading icon: " + e.getMessage());
+            e.printStackTrace();
+        }
         
         VBox root = new VBox(10);
         root.setPadding(new Insets(20));
@@ -290,7 +310,7 @@ public class HelpWindow extends Stage {
         tfDuration.setOnAction(e -> {
             try {
                 int val = Integer.parseInt(tfDuration.getText().trim());
-                val = Math.max(AppConfig.ROULETTE_ANIMATION_DURATION_MS_MIN, Math.min(AppConfig.ROULETTE_ANIMATION_DURATION_MS_MAX, val));
+                val = Math.clamp(val, AppConfig.ROULETTE_ANIMATION_DURATION_MS_MIN, AppConfig.ROULETTE_ANIMATION_DURATION_MS_MAX);
                 AppConfig.rouletteAnimationDurationMs = val;
                 sliderDuration.setValue(val);
                 ConfigManager.setAndSave("animation_duration_ms", String.valueOf(val));

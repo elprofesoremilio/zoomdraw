@@ -18,6 +18,7 @@ import javafx.scene.shape.StrokeLineCap;
 import javafx.scene.shape.StrokeLineJoin;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
+import javafx.scene.image.Image;
 
 public class AnnotationStage extends Stage implements BrushSettingsUpdater {
 
@@ -49,6 +50,24 @@ public class AnnotationStage extends Stage implements BrushSettingsUpdater {
 
     public AnnotationStage(AnnotationManager manager, Rectangle2D bounds, WritableImage background) {
         super(StageStyle.TRANSPARENT);
+        setTitle("ZoomDraw");
+        try {
+            java.io.InputStream imgStream = getClass().getResourceAsStream("/es/elprofesoremilio/zoomdraw/ui/zoomdraw.png");
+            if (imgStream == null) {
+                imgStream = getClass().getResourceAsStream("zoomdraw.png");
+            }
+            if (imgStream == null) {
+                imgStream = getClass().getResourceAsStream("/zoomdraw.png");
+            }
+            if (imgStream == null) {
+                imgStream = getClass().getClassLoader().getResourceAsStream("zoomdraw.png");
+            }
+            if (imgStream != null) {
+                getIcons().add(new Image(imgStream));
+            }
+        } catch (Exception e) {
+            // ignore
+        }
         this.manager = manager;
         this.background = background;
         this.commandHistory = manager.getGlobalHistory();

@@ -12,6 +12,7 @@ import es.elprofesoremilio.zoomdraw.utils.AppLogger;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.stage.Stage;
+import javafx.scene.image.Image;
 
 import dorkbox.systemTray.MenuItem;
 import dorkbox.systemTray.SystemTray;
@@ -42,12 +43,51 @@ public class AppLauncher extends Application {
         logger.setLevel(AppConfig.JNATIVEHOOK_LOG_LEVEL);
         logger.setUseParentHandlers(false);
 
-        // Ocultar stage primario e impedir cierre implícito
+        // === MODIFICACIÓN AQUÍ: Configurar stage primario como "Ancla Fantasma" ===
         primaryStage.hide();
         Platform.setImplicitExit(false);
+        
+        // Cargar icono en el stage primario
+        try {
+            java.io.InputStream imgStream = getClass().getResourceAsStream("/es/elprofesoremilio/zoomdraw/ui/zoomdraw.png");
+            if (imgStream == null) {
+                imgStream = getClass().getResourceAsStream("zoomdraw.png");
+            }
+            if (imgStream == null) {
+                imgStream = getClass().getResourceAsStream("/zoomdraw.png");
+            }
+            if (imgStream == null) {
+                imgStream = getClass().getClassLoader().getResourceAsStream("zoomdraw.png");
+            }
+            if (imgStream != null) {
+                primaryStage.getIcons().add(new Image(imgStream));
+            }
+        } catch (Exception e) {
+            AppLogger.logError("Error al cargar icono en primaryStage", e);
+        }
+
+        // Cargar icono en el taskbar del sistema usando AWT Taskbar API
+        try {
+            if (java.awt.Taskbar.isTaskbarSupported()) {
+                java.awt.Taskbar taskbar = java.awt.Taskbar.getTaskbar();
+                if (taskbar.isSupported(java.awt.Taskbar.Feature.ICON_IMAGE)) {
+                    java.net.URL imgUrl = getClass().getResource("/es/elprofesoremilio/zoomdraw/ui/zoomdraw.png");
+                    if (imgUrl == null) {
+                        imgUrl = getClass().getResource("/zoomdraw.png");
+                    }
+                    if (imgUrl != null) {
+                        java.awt.Image awtImage = java.awt.Toolkit.getDefaultToolkit().getImage(imgUrl);
+                        taskbar.setIconImage(awtImage);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            AppLogger.logError("Error al configurar icono del Taskbar de AWT", e);
+        }
 
         // Inicializar el mediador central
         annotationManager = new AnnotationManager();
+        annotationManager.setPrimaryStage(primaryStage);
 
         // Crear comandos
         ToggleAnnotationModeCommand toggleCommand = new ToggleAnnotationModeCommand(annotationManager);

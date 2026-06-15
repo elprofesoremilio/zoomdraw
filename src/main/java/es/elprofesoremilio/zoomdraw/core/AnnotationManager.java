@@ -11,11 +11,14 @@ import es.elprofesoremilio.zoomdraw.commands.CommandHistory;
 import es.elprofesoremilio.zoomdraw.commands.ClearCommand;
 import es.elprofesoremilio.zoomdraw.commands.DrawingCommand;
 
+import javafx.stage.Stage;
+
 /**
  * Orchestrates the annotation mode lifecycle.
  */
 public class AnnotationManager {
 
+    private Stage primaryStage = null;
     private AnnotationStage currentStage = null;
     private HelpWindow helpWindow = null;
     private volatile boolean active = false;
@@ -124,27 +127,43 @@ public class AnnotationManager {
         this.brushSettings.setCurrentLineWidth(width);
     }
 
+    public void setPrimaryStage(Stage primaryStage) {
+        this.primaryStage = primaryStage;
+    }
+
     public void toggleHelpWindow() {
         Platform.runLater(() -> {
             if (helpWindow == null) {
                 helpWindow = new HelpWindow(this);
+                if (primaryStage != null) {
+                    helpWindow.initOwner(primaryStage);
+                }
             }
             if (helpWindow.isShowing()) {
                 helpWindow.hide();
             } else {
                 helpWindow.show();
-                
+
+                // Reaplicar el icono en el ciclo siguiente: en Windows el handle nativo de TRANSPARENT Stage se crea durante show(), y la barra de tareas no lo recoge hasta el próximo ciclo.
+                if (!helpWindow.getIcons().isEmpty()) {
+                    final javafx.scene.image.Image icon = helpWindow.getIcons().get(0);
+                    Platform.runLater(() -> {
+                        helpWindow.getIcons().clear();
+                        helpWindow.getIcons().add(icon);
+                    });
+                }
+
                 Rectangle2D targetBounds;
                 if (active && currentStage != null) {
                     targetBounds = new Rectangle2D(currentStage.getX(), currentStage.getY(), currentStage.getWidth(), currentStage.getHeight());
                 } else {
                     targetBounds = ScreenUtils.getScreenBoundsAtCursor();
                 }
-                
+
                 double padding = 30.0; // Un poquito separado del borde
                 double x = targetBounds.getMaxX() - helpWindow.getWidth() - padding;
                 double y = targetBounds.getMinY() + padding;
-                
+
                 helpWindow.setX(x);
                 helpWindow.setY(y);
                 helpWindow.toFront();
