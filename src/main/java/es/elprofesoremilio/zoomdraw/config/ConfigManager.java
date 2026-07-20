@@ -92,6 +92,9 @@ public class ConfigManager {
         AppConfig.rouletteCustomPaletteName = get("custom_palette_name", "Custom");
         AppConfig.rouletteCustomPaletteColors = get("custom_palette_colors", "");
 
+        String showHelpStr = getOrSetDefault("show_help_on_startup", "true");
+        AppConfig.showHelpOnStartup = Boolean.parseBoolean(showHelpStr);
+
         // Hotkey configuration loading with defaults
         String hotkeyAnnotationStr = getOrSetDefault("hotkey_annotation", "Win+F2");
         try {

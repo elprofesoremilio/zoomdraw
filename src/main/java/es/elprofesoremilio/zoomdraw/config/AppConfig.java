@@ -111,7 +111,7 @@ public class AppConfig {
     public static final Color DEFAULT_COLOR = AppConfig.RED;
     public static final double DEFAULT_LINE_WIDTH = 3.0;
     public static final double DEFAULT_OPACITY = 1.0;
-    public static final int HELP_WINDOW_KEY = NativeKeyEvent.VC_0;
+    public static Hotkey hotkeyHelp = Hotkey.parse("Win+0");
 
     public static boolean systemTrayLoaded = false;
 
@@ -153,6 +153,7 @@ public class AppConfig {
     public static boolean rouletteRepeatModeDefault   = ROULETTE_REPEAT_MODE_DEFAULT;
     public static String  rouletteCustomPaletteName   = "Custom";
     public static String  rouletteCustomPaletteColors = "";
+    public static boolean showHelpOnStartup           = true;
 
     public static final boolean isLinux = System.getProperty("os.name").toLowerCase().contains("linux");
 

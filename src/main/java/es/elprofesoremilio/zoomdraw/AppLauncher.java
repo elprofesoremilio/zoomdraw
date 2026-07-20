@@ -107,7 +107,9 @@ public class AppLauncher extends Application {
             initDorkboxSystemTray();
         }
 
-        annotationManager.toggleHelpWindow();
+        if (AppConfig.showHelpOnStartup) {
+            annotationManager.toggleHelpWindow();
+        }
     }
 
     private void createTrayIcon() {

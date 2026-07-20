@@ -78,10 +78,11 @@ public class GlobalKeyHook implements NativeKeyListener, NativeMouseMotionListen
             return;
         }
 
-        // CTRL + 0
-        if (ctrlDown && keyCode == AppConfig.HELP_WINDOW_KEY) {
+        // Win + 0 (Mostrar/Ocultar ayuda)
+        if (AppConfig.hotkeyHelp != null && AppConfig.hotkeyHelp.matches(e)) {
             consumeEvent(e);
             manager.toggleHelpWindow();
+            return;
         }
 
         // ESC cierra el modo ruleta

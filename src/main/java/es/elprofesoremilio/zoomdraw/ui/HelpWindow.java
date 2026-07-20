@@ -77,7 +77,7 @@ public class HelpWindow extends Stage {
             AppConfig.hotkeyAnnotation.toString() + ": Activar/desactivar modo anotación\n" +
             AppConfig.hotkeyLaser.toString() + ": Activar/desactivar modo puntero láser (desde inactivo)\n" +
             AppConfig.hotkeyRoulette.toString() + ": Activar/desactivar modo ruleta (desde inactivo)\n" +
-            "CTRL + 0: Mostrar/Ocultar esta ventana de ayuda\n" +
+            AppConfig.hotkeyHelp.toString() + ": Mostrar/Ocultar esta ventana de ayuda\n" +
             "ESC: Salir de modo anotación / puntero láser / texto / borrador / ruleta\n\n" +
             "Dibujo y Herramientas (Modo Anotación):\n" +
             "\tClick Izquierdo: Dibujar trazo libre / colocar texto\n" +
@@ -112,6 +112,41 @@ public class HelpWindow extends Stage {
 
         shortcutsBox.getChildren().addAll(title, shortcuts);
         tabShortcuts.setContent(shortcutsBox);
+
+        // ==========================================
+        // TAB 1.5: Configuración
+        // ==========================================
+        Tab tabConfiguracion = new Tab("Configuración");
+        VBox configBox = new VBox(15);
+        configBox.setPadding(new Insets(15, 5, 10, 5));
+
+        Label configTitle = new Label("Configuración General");
+        configTitle.setFont(Font.font("System", FontWeight.BOLD, 20));
+        configTitle.setTextFill(Color.WHITE);
+        configTitle.setPadding(new Insets(0, 0, 10, 0));
+
+        GridPane configGrid = new GridPane();
+        configGrid.setHgap(15);
+        configGrid.setVgap(12);
+        configGrid.setAlignment(Pos.CENTER_LEFT);
+
+        Label lblShowHelp = new Label("Mostrar ayuda al iniciar:");
+        lblShowHelp.setTextFill(Color.web("#b2bec3"));
+        lblShowHelp.setFont(Font.font("System", 13));
+
+        CheckBox cbShowHelp = new CheckBox();
+        cbShowHelp.setSelected(AppConfig.showHelpOnStartup);
+        cbShowHelp.setStyle("-fx-cursor: hand;");
+        cbShowHelp.setOnAction(e -> {
+            AppConfig.showHelpOnStartup = cbShowHelp.isSelected();
+            ConfigManager.setAndSave("show_help_on_startup", String.valueOf(cbShowHelp.isSelected()));
+        });
+
+        configGrid.add(lblShowHelp, 0, 0);
+        configGrid.add(cbShowHelp, 1, 0);
+
+        configBox.getChildren().addAll(configTitle, configGrid);
+        tabConfiguracion.setContent(configBox);
 
         // ==========================================
         // TAB 2: Laser Pointer Configuration
@@ -448,7 +483,7 @@ public class HelpWindow extends Stage {
         tabRuleta.setContent(ruletaBox);
 
         // Style the tab pane to match the dark slate visual identity
-        tabPane.getTabs().addAll(tabShortcuts, tabLaser, tabRuleta);
+        tabPane.getTabs().addAll(tabShortcuts, tabConfiguracion, tabLaser, tabRuleta);
         
         // Control Panel (Button + Slider)
         HBox controlBox = new HBox(15);
