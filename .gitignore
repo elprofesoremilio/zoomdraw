@@ -66,3 +66,5 @@ Thumbs.db
 # Ignore local configuration files
 application-local.properties
 application-local.yml
+# Claude Code personal settings
+.claude/settings.local.json
