@@ -2,6 +2,7 @@ package es.elprofesoremilio.zoomdraw.ui.controllers;
 
 import es.elprofesoremilio.zoomdraw.config.AppConfig;
 import es.elprofesoremilio.zoomdraw.commands.CommandHistory;
+import es.elprofesoremilio.zoomdraw.commands.StampCommand;
 import es.elprofesoremilio.zoomdraw.core.AnnotationManager;
 import es.elprofesoremilio.zoomdraw.ui.AnnotationStage;
 import es.elprofesoremilio.zoomdraw.ui.controllers.CaptureController.CropAction;
@@ -19,17 +20,20 @@ public class InputDispatcher {
     private final TextToolController textToolController;
     private final NumberingToolController numberingToolController;
     private final EraserToolController eraserToolController;
+    private final StampToolController stampToolController;
     private final CropToolController cropToolController;
     private final CaptureController captureController;
     private final AnnotationManager manager;
     private final AnnotationStage stage;
     private final CommandHistory commandHistory;
+    private boolean stampKeyHeld = false;
 
     public InputDispatcher(ZoomPanController zoomPanController,
                            DrawingController drawingController,
                            TextToolController textToolController,
                            NumberingToolController numberingToolController,
                            EraserToolController eraserToolController,
+                           StampToolController stampToolController,
                            CropToolController cropToolController,
                            CaptureController captureController,
                            AnnotationManager manager,
@@ -39,6 +43,7 @@ public class InputDispatcher {
         this.textToolController = textToolController;
         this.numberingToolController = numberingToolController;
         this.eraserToolController = eraserToolController;
+        this.stampToolController = stampToolController;
         this.cropToolController = cropToolController;
         this.captureController = captureController;
         this.manager = manager;
@@ -89,6 +94,7 @@ public class InputDispatcher {
                     if (textToolController.isActive()) {
                         textToolController.exitTextMode();
                     }
+                    stampToolController.exit();
                     cropToolController.enterCropMode(CropAction.CLIPBOARD);
                     event.consume();
                     return;
@@ -99,6 +105,7 @@ public class InputDispatcher {
                     if (textToolController.isActive()) {
                         textToolController.exitTextMode();
                     }
+                    stampToolController.exit();
                     cropToolController.enterCropMode(CropAction.SAVE);
                     event.consume();
                     return;
@@ -127,6 +134,7 @@ public class InputDispatcher {
                 if (numberingToolController.isActive()) {
                     numberingToolController.cancelNumberingMode();
                 }
+                stampToolController.exit();
                 eraserToolController.enterEraserMode();
             }
             event.consume();
@@ -161,6 +169,7 @@ public class InputDispatcher {
                 if (numberingToolController.isActive()) {
                     numberingToolController.cancelNumberingMode();
                 }
+                stampToolController.exit();
                 textToolController.enterTextMode();
             }
             event.consume();
@@ -189,6 +198,29 @@ public class InputDispatcher {
                 event.consume();
                 return;
             }
+        }
+
+        // 7a. Stamp keys: V = check, X = cross (switchable while a stamp is active)
+        if (!isCtrl && !isAlt && !isShift && !event.isMetaDown()
+                && (code == KeyCode.V || code == KeyCode.X) && !eraserToolController.isActive()) {
+            if (!stampKeyHeld) {
+                stampToolController.select(code == KeyCode.V ? StampCommand.Type.CHECK : StampCommand.Type.CROSS);
+            }
+            stampKeyHeld = true;
+            event.consume();
+            return;
+        }
+
+        // 7b. Arrow keys pan the view while zoomed in (otherwise they keep their width/opacity role)
+        if (zoomPanController.getZoomFactor() > 1.0 && !isCtrl && !isAlt && !isShift
+                && (code == KeyCode.UP || code == KeyCode.DOWN || code == KeyCode.LEFT || code == KeyCode.RIGHT)) {
+            double step = AppConfig.PAN_STEP;
+            double dx = code == KeyCode.LEFT ? step : code == KeyCode.RIGHT ? -step : 0;
+            double dy = code == KeyCode.UP ? step : code == KeyCode.DOWN ? -step : 0;
+            zoomPanController.pan(dx, dy, stage.getWidth(), stage.getHeight());
+            stage.redrawAll();
+            event.consume();
+            return;
         }
 
         // 8. Global line width keys
@@ -293,6 +325,7 @@ public class InputDispatcher {
         // 12. Toggle numbering mode key
         if (code == KeyCode.N) {
             if (!numberingToolController.isActive() && !textToolController.isActive()) {
+                stampToolController.exit();
                 numberingToolController.enterNumberingMode();
                 event.consume();
                 return;
@@ -349,6 +382,9 @@ public class InputDispatcher {
     }
 
     private void handleKeyReleasedFilter(KeyEvent event) {
+        if (event.getCode() == KeyCode.V || event.getCode() == KeyCode.X) {
+            stampKeyHeld = false;
+        }
         if (textToolController.isActive() && textToolController.isTyping()) {
             return;
         }
@@ -381,6 +417,10 @@ public class InputDispatcher {
             textToolController.handleMousePressed(event);
             return;
         }
+        if (stampToolController.isActive()) {
+            stampToolController.handleMousePressed(event);
+            return;
+        }
         drawingController.handleMousePressed(event);
     }
 
@@ -401,6 +441,10 @@ public class InputDispatcher {
             textToolController.handleMouseMoved(event.getX(), event.getY());
             return;
         }
+        if (stampToolController.isActive()) {
+            stampToolController.handleMouseMoved(event.getX(), event.getY());
+            return;
+        }
         drawingController.handleMouseDragged(event);
     }
 
@@ -417,7 +461,7 @@ public class InputDispatcher {
             numberingToolController.handleMouseReleased(event);
             return;
         }
-        if (textToolController.isActive()) {
+        if (textToolController.isActive() || stampToolController.isActive()) {
             return;
         }
         drawingController.handleMouseReleased(event);
@@ -438,6 +482,9 @@ public class InputDispatcher {
         }
         if (textToolController.isActive()) {
             textToolController.handleMouseMoved(event.getX(), event.getY());
+        }
+        if (stampToolController.isActive()) {
+            stampToolController.handleMouseMoved(event.getX(), event.getY());
         }
     }
 
@@ -470,6 +517,7 @@ public class InputDispatcher {
             }
             manager.setCurrentLineWidth(newWidth);
             stage.updateBrushSettings();
+            stampToolController.drawPreview();
             event.consume();
         } else if (event.isShiftDown()) {
             double newAlpha = getNewAlpha(event);
@@ -487,6 +535,7 @@ public class InputDispatcher {
             }
             zoomPanController.zoomAtCursor(event.getDeltaY(), event.getX(), event.getY());
             stage.redrawAll();
+            stampToolController.drawPreview();
             if (textToolController.isTyping()) {
                 textToolController.redrawTextTemporal();
             }

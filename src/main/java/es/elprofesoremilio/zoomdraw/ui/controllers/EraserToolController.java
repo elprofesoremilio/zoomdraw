@@ -26,6 +26,8 @@ public class EraserToolController {
     private boolean isActive = false;
     private double screenRadius = AppConfig.ERASER_RADIUS_DEFAULT;
     private boolean isDragging = false;
+    // Set once the current gesture has touched a non-background item: filled shapes are then spared
+    private boolean backgroundProtected = false;
 
     private List<DrawingCommand> originalHistory = null;
     private List<DrawingCommand> workingHistory = null;
@@ -111,6 +113,7 @@ public class EraserToolController {
 
         if (event.getButton() == javafx.scene.input.MouseButton.PRIMARY) {
             isDragging = true;
+            backgroundProtected = false;
 
             // Capture initial states
             originalHistory = new ArrayList<>();
@@ -220,6 +223,12 @@ public class EraserToolController {
         boolean anyChanged = false;
         List<DrawingCommand> nextWorkingHistory = new ArrayList<>();
 
+        // Filled shapes act as background: they are only erased when nothing above them is
+        // under the eraser, and never after this gesture has touched something above them.
+        if (!backgroundProtected && hitsForeground(center, radius)) {
+            backgroundProtected = true;
+        }
+
         for (DrawingCommand cmd : workingHistory) {
             if (cmd instanceof PathCommand) {
                 PathCommand path = (PathCommand) cmd;
@@ -239,7 +248,7 @@ public class EraserToolController {
                 }
             } else if (cmd instanceof ShapeCommand) {
                 ShapeCommand shape = (ShapeCommand) cmd;
-                if (shape.intersects(center, radius)) {
+                if (shape.intersects(center, radius) && !(shape.isFilled() && backgroundProtected)) {
                     anyChanged = true;
                 } else {
                     nextWorkingHistory.add(shape);
@@ -250,6 +259,13 @@ public class EraserToolController {
                     anyChanged = true;
                 } else {
                     nextWorkingHistory.add(text);
+                }
+            } else if (cmd instanceof StampCommand) {
+                StampCommand stamp = (StampCommand) cmd;
+                if (stamp.intersects(center, radius)) {
+                    anyChanged = true;
+                } else {
+                    nextWorkingHistory.add(stamp);
                 }
             } else if (cmd instanceof NumberingSessionCommand) {
                 NumberingSessionCommand session = (NumberingSessionCommand) cmd;
@@ -271,6 +287,33 @@ public class EraserToolController {
             workingHistory = nextWorkingHistory;
         }
         return anyChanged;
+    }
+
+    /** True if any visible non-background item (anything but a filled shape) is under the eraser. */
+    private boolean hitsForeground(Point2D center, double radius) {
+        // Items before the last ClearCommand are no longer on screen
+        int firstVisible = 0;
+        for (int i = 0; i < workingHistory.size(); i++) {
+            if (workingHistory.get(i) instanceof ClearCommand) firstVisible = i + 1;
+        }
+        for (DrawingCommand cmd : workingHistory.subList(firstVisible, workingHistory.size())) {
+            if (cmd instanceof PathCommand) {
+                for (Point2D p : ((PathCommand) cmd).getPoints()) {
+                    if (p.distance(center) <= radius) return true;
+                }
+            } else if (cmd instanceof ShapeCommand) {
+                ShapeCommand shape = (ShapeCommand) cmd;
+                if (!shape.isFilled() && shape.intersects(center, radius)) return true;
+            } else if (cmd instanceof TextCommand) {
+                if (((TextCommand) cmd).intersects(center, radius)) return true;
+            } else if (cmd instanceof StampCommand) {
+                if (((StampCommand) cmd).intersects(center, radius)) return true;
+            } else if (cmd instanceof NumberingSessionCommand) {
+                NumberingSessionCommand session = (NumberingSessionCommand) cmd;
+                if (eraseNumberingSession(session, center, radius) != session) return true;
+            }
+        }
+        return false;
     }
 
     private List<PathCommand> erasePath(PathCommand path, Point2D center, double radius) {

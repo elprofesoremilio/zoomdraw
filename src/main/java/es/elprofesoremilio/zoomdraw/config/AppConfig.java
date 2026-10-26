@@ -103,6 +103,15 @@ public class AppConfig {
     public static final Color WHITE = new Color(1,1,1,1);
 
     // KeyCodes for global opacity
+    // Stamps (V = check, X = cross)
+    public static final double STAMP_SIZE_FACTOR = 6.0;   // symbol size = line width * factor
+    public static final double STAMP_GHOST_OPACITY = 0.5;
+    public static final Color STAMP_CHECK_COLOR = Color.rgb(0, 170, 0);
+    public static final Color STAMP_CROSS_COLOR = Color.rgb(220, 0, 0);
+
+    /** Pixels moved per arrow-key press when panning a zoomed view. */
+    public static final double PAN_STEP = 60.0;
+
     public static final KeyCode GLOBAL_OPACITY_DECREASE_KEY = KeyCode.LEFT;
     public static final KeyCode GLOBAL_OPACITY_INCREASE_KEY = KeyCode.RIGHT;
 

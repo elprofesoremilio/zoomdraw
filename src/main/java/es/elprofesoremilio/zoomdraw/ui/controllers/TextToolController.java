@@ -2,6 +2,7 @@ package es.elprofesoremilio.zoomdraw.ui.controllers;
 
 import es.elprofesoremilio.zoomdraw.commands.CommandHistory;
 import es.elprofesoremilio.zoomdraw.commands.DrawingCommand;
+import es.elprofesoremilio.zoomdraw.commands.ClearCommand;
 import es.elprofesoremilio.zoomdraw.commands.TextCommand;
 import es.elprofesoremilio.zoomdraw.commands.TextEditMarkerCommand;
 import es.elprofesoremilio.zoomdraw.config.AppConfig;
@@ -148,18 +149,25 @@ public class TextToolController {
     }
 
     private void handlePrimaryClick(double origX, double origY) {
-        // Check if click lands on an existing committed TextCommand
+        // Check if click lands on an existing committed TextCommand.
+        // Only commands after the last ClearCommand are visible, so only those are hit-testable.
+        TextCommand hit = null;
         for (DrawingCommand cmd : commandHistory.getHistory()) {
-            if (cmd instanceof TextCommand) {
+            if (cmd instanceof ClearCommand) {
+                hit = null;
+            } else if (cmd instanceof TextCommand) {
                 TextCommand tc = (TextCommand) cmd;
                 if (!tc.isHiddenForEditing()) {
                     Bounds b = tc.getBounds();
                     if (b != null && b.contains(origX, origY)) {
-                        startEditExisting(tc);
-                        return;
+                        hit = tc;
                     }
                 }
             }
+        }
+        if (hit != null) {
+            startEditExisting(hit);
+            return;
         }
         startNewBlock(origX, origY);
     }

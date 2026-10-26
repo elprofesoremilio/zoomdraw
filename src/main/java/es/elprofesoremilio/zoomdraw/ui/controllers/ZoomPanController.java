@@ -57,6 +57,12 @@ public class ZoomPanController {
         }
     }
 
+    /** Pans the zoomed view by (dx, dy) screen pixels, keeping the capture within the viewport. */
+    public void pan(double dx, double dy, double viewWidth, double viewHeight) {
+        offsetX = Math.max(viewWidth * (1.0 - zoomFactor), Math.min(0.0, offsetX + dx));
+        offsetY = Math.max(viewHeight * (1.0 - zoomFactor), Math.min(0.0, offsetY + dy));
+    }
+
     public void reset() {
         zoomFactor = 1.0;
         offsetX = 0.0;

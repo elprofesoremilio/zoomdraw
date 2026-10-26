@@ -185,6 +185,12 @@ public class ShapeCommand implements DrawingCommand {
         return end;
     }
 
+    /** Filled shapes can serve as a background for other annotations. */
+    public boolean isFilled() {
+        return mode == DrawMode.FILLED_RECTANGLE || mode == DrawMode.FILLED_CIRCLE
+                || mode == DrawMode.FILLED_ELLIPSE || mode == DrawMode.CENSOR_RECTANGLE;
+    }
+
     public DrawMode getMode() {
         return mode;
     }
