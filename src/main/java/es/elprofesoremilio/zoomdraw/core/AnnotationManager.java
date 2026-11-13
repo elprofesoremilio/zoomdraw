@@ -26,6 +26,8 @@ public class AnnotationManager {
     private volatile boolean laserActive = false;
     private es.elprofesoremilio.zoomdraw.ui.RouletteStage rouletteStage = null;
     private volatile boolean rouletteActive = false;
+    private es.elprofesoremilio.zoomdraw.ui.CountdownStage countdownStage = null;
+    private volatile boolean countdownActive = false;
     private final BrushSettings brushSettings; // Use the new BrushSettings class
     private final CommandHistory globalHistory;
 
@@ -50,6 +52,7 @@ public class AnnotationManager {
     public void startLaserMode() {
         if (laserActive || active) return;
         if (rouletteActive) stopRouletteMode();
+        if (countdownActive) stopCountdownMode();
         AppLogger.log("Starting laser pointer mode");
         Platform.runLater(() -> {
             try {
@@ -204,6 +207,11 @@ public class AnnotationManager {
             stopRouletteMode();
         }
 
+        // Desactivar cuenta atrás si está activa
+        if (countdownActive) {
+            stopCountdownMode();
+        }
+
         AppLogger.log("Starting annotation mode");
 
         try {
@@ -318,6 +326,42 @@ public class AnnotationManager {
                 rouletteStage = null;
             }
             rouletteActive = false;
+        });
+    }
+
+    public boolean isCountdownActive() {
+        return countdownActive;
+    }
+
+    public void toggleCountdownMode() {
+        Platform.runLater(() -> {
+            if (countdownActive) {
+                stopCountdownMode();
+            } else if (!active && !laserActive) {
+                startCountdownMode();
+            }
+        });
+    }
+
+    private void startCountdownMode() {
+        AppLogger.log("Starting countdown mode");
+        countdownStage = new es.elprofesoremilio.zoomdraw.ui.CountdownStage();
+        countdownStage.setOnHidden(e -> {
+            countdownStage = null;
+            countdownActive = false;
+        });
+        countdownStage.show();
+        countdownStage.toFront();
+        countdownActive = true;
+    }
+
+    public void stopCountdownMode() {
+        Platform.runLater(() -> {
+            if (countdownStage != null) {
+                countdownStage.close();
+                countdownStage = null;
+            }
+            countdownActive = false;
         });
     }
 

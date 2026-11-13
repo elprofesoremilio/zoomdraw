@@ -78,6 +78,15 @@ public class GlobalKeyHook implements NativeKeyListener, NativeMouseMotionListen
             return;
         }
 
+        // Modo Cuenta atrás - incompatible con anotación y láser; la ruleta puede coexistir
+        if (AppConfig.hotkeyCountdown != null && AppConfig.hotkeyCountdown.matches(e)) {
+            consumeEvent(e);
+            if (!manager.isActive() && !manager.isLaserActive()) {
+                manager.toggleCountdownMode();
+            }
+            return;
+        }
+
         // Win + 0 (Mostrar/Ocultar ayuda)
         if (AppConfig.hotkeyHelp != null && AppConfig.hotkeyHelp.matches(e)) {
             consumeEvent(e);

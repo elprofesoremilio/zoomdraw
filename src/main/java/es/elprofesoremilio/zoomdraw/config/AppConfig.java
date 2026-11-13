@@ -19,6 +19,10 @@ public class AppConfig {
     public static Hotkey hotkeyAnnotation = Hotkey.parse("Win+F2");
     public static Hotkey hotkeyLaser = Hotkey.parse("Win+F3");
     public static Hotkey hotkeyRoulette = Hotkey.parse("Win+F4");
+    public static Hotkey hotkeyCountdown = Hotkey.parse("Win+F5");
+
+    // Countdown mode – default duration in seconds (persisted in config.properties)
+    public static int countdownDefaultSeconds = 300;
 
     // JNativeHook Logger Level
     public static final Level JNATIVEHOOK_LOG_LEVEL = Level.OFF;

@@ -142,6 +142,7 @@ Todos en `ui/controllers/`. Cada uno recibe canvas, `ZoomPanController` y `Comma
 | `Win+F2` | Activar/desactivar modo anotación (configurable) | `GlobalKeyHook` → `AnnotationManager` |
 | `Win+F3` | Activar/desactivar puntero láser (configurable) | `GlobalKeyHook` → `AnnotationManager` → `LaserPointerStage` |
 | `Win+F4` | Activar/desactivar modo ruleta (configurable) | `GlobalKeyHook` → `AnnotationManager` → `RouletteStage` |
+| `Win+F5` | Abrir/cerrar cuenta atrás (configurable; incompatible con anotación y láser) | `GlobalKeyHook` → `AnnotationManager` → `CountdownStage` |
 | `Ctrl+0` | Mostrar/ocultar ventana de ayuda | `GlobalKeyHook` → `AnnotationManager` → `HelpWindow` |
 
 ### Dibujo libre (modo anotación)

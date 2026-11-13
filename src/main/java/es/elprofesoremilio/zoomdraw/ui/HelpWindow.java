@@ -77,6 +77,7 @@ public class HelpWindow extends Stage {
             AppConfig.hotkeyAnnotation.toString() + ": Activar/desactivar modo anotación\n" +
             AppConfig.hotkeyLaser.toString() + ": Activar/desactivar modo puntero láser (desde inactivo)\n" +
             AppConfig.hotkeyRoulette.toString() + ": Activar/desactivar modo ruleta (desde inactivo)\n" +
+            AppConfig.hotkeyCountdown.toString() + ": Abrir/cerrar cuenta atrás (desde inactivo; F11 pantalla completa, Espacio inicia/pausa)\n" +
             AppConfig.hotkeyHelp.toString() + ": Mostrar/Ocultar esta ventana de ayuda\n" +
             "ESC: Salir de modo anotación / puntero láser / texto / borrador / ruleta\n\n" +
             "Dibujo y Herramientas (Modo Anotación):\n" +

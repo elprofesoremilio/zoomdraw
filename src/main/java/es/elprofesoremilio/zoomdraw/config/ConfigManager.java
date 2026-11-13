@@ -120,6 +120,21 @@ public class ConfigManager {
             AppConfig.hotkeyRoulette = Hotkey.parse("Win+F4");
         }
 
+        String hotkeyCountdownStr = getOrSetDefault("hotkey_countdown", "Win+F5");
+        try {
+            AppConfig.hotkeyCountdown = Hotkey.parse(hotkeyCountdownStr);
+        } catch (Exception e) {
+            AppLogger.logError("Error parsing hotkey_countdown, reverting to default Win+F5", e);
+            AppConfig.hotkeyCountdown = Hotkey.parse("Win+F5");
+        }
+
+        try {
+            int secs = Integer.parseInt(get("countdown_default_seconds", String.valueOf(AppConfig.countdownDefaultSeconds)).trim());
+            if (secs > 0) AppConfig.countdownDefaultSeconds = secs;
+        } catch (NumberFormatException e) {
+            AppLogger.logError("Invalid countdown_default_seconds, using default", e);
+        }
+
         AppConfig.RENDERER_SUB_TEXT = "(o " + AppConfig.hotkeyAnnotation.toString() + " para activar/desactivar)";
     }
 }

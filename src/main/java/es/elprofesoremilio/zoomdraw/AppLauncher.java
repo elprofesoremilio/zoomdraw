@@ -104,7 +104,11 @@ public class AppLauncher extends Application {
         if (os.contains("win")) {
             initAwtSystemTray();
         } else {
-            initDorkboxSystemTray();
+            // Fuera del hilo de JavaFX: la detección del entorno de Dorkbox ejecuta procesos externos
+            // (p. ej. "ps x") y puede quedarse bloqueada, congelando todos los Platform.runLater.
+            Thread trayThread = new Thread(this::initDorkboxSystemTray, "dorkbox-tray-init");
+            trayThread.setDaemon(true);
+            trayThread.start();
         }
 
         if (AppConfig.showHelpOnStartup) {
